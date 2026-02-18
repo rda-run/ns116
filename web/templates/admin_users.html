@@ -1,0 +1,161 @@
+{{define "content"}}
+<div class="mb-6 flex justify-between items-center">
+  <div>
+    <h2
+      class="font-branding text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600">
+      User Management</h2>
+    <p class="font-mono text-xs text-gray-500 uppercase tracking-widest mt-1">Manage system access</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+  <!-- Create User Form -->
+  <div class="md:col-span-1">
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden sticky top-24">
+      <div class="p-6 border-b border-gray-100 bg-gray-50/50">
+        <h3 class="font-bold text-gray-800 flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-4 h-4 text-highway-green"></i>
+          Create New User
+        </h3>
+      </div>
+      <div class="p-6">
+        <form action="/admin/users/create" method="POST">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+
+          <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Username</label>
+            <div class="relative">
+              <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+              <input type="text" name="username" required
+                class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-highway-green/20 focus:border-highway-green transition-all"
+                placeholder="jdoe">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password</label>
+            <div class="relative">
+              <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+              <input type="password" name="password" required
+                class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-highway-green/20 focus:border-highway-green transition-all"
+                placeholder="••••••••">
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Role</label>
+            <div class="relative">
+              <i data-lucide="shield" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+              <select name="role"
+                class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-highway-green/20 focus:border-highway-green bg-white transition-all appearance-none">
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+              </select>
+              <i data-lucide="chevron-down"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"></i>
+            </div>
+          </div>
+
+          <button type="submit"
+            class="w-full bg-asphalt-dark text-white font-bold py-2.5 px-4 rounded-lg hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-gray-200 group">
+            <i data-lucide="plus" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+            Create User
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users List -->
+  <div class="md:col-span-2">
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50/50 border-b border-gray-100 text-xs font-mono uppercase text-gray-500 tracking-wider">
+              <th class="p-4 font-semibold">User</th>
+              <th class="p-4 font-semibold">Role</th>
+              <th class="p-4 font-semibold">Source</th>
+              <th class="p-4 font-semibold">Status</th>
+              <th class="p-4 font-semibold">Created</th>
+              <th class="p-4 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm divide-y divide-gray-50">
+            {{range .Users}}
+            <tr class="group hover:bg-yellow-50/50 transition-colors">
+              <td class="p-4">
+                <div class="font-bold text-gray-900">{{.Username}}</div>
+                <div class="text-xs text-gray-400 font-mono">ID: {{.ID}}</div>
+              </td>
+              <td class="p-4">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border
+                  {{if eq .Role " admin"}}bg-purple-50 text-purple-700 border-purple-200{{else}}bg-blue-50
+                  text-blue-700 border-blue-200{{end}}">
+                  {{if eq .Role "admin"}}<i data-lucide="shield-alert" class="w-3 h-3"></i>{{else}}<i
+                    data-lucide="shield" class="w-3 h-3"></i>{{end}}
+                  {{.Role}}
+                </span>
+              </td>
+              <td class="p-4">
+                <span
+                  class="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                  {{if eq .AuthSource "ldap"}}<i data-lucide="network" class="w-3 h-3"></i>{{else}}<i
+                    data-lucide="database" class="w-3 h-3"></i>{{end}}
+                  {{.AuthSource}}
+                </span>
+              </td>
+              <td class="p-4">
+                {{if .Active}}
+                <span
+                  class="inline-flex items-center gap-1.5 text-green-700 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium border border-green-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
+                </span>
+                {{else}}
+                <span
+                  class="inline-flex items-center gap-1.5 text-red-700 bg-red-50 px-2.5 py-1 rounded-full text-xs font-medium border border-red-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Inactive
+                </span>
+                {{end}}
+              </td>
+              <td class="p-4 text-xs font-mono text-gray-500">
+                {{formatDate .CreatedAt}}
+              </td>
+              <td class="p-4 text-right">
+                {{if and (ne .Username $.Username) (eq .AuthSource "local")}}
+                <form action="/admin/users/delete" method="POST" class="inline"
+                  onsubmit="return confirm('Are you sure you want to delete user {{.Username}}?');">
+                  <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                  <input type="hidden" name="username" value="{{.Username}}">
+                  <button type="submit"
+                    class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                    title="Delete User">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </form>
+                {{else}}
+                <span class="text-gray-300 p-2 block" title="Cannot delete">
+                  <i data-lucide="lock" class="w-4 h-4 ml-auto"></i>
+                </span>
+                {{end}}
+              </td>
+            </tr>
+            {{else}}
+            <tr>
+              <td colspan="6" class="p-8 text-center text-gray-500">
+                <div class="flex flex-col items-center gap-3">
+                  <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                  </div>
+                  <p>No other users found.</p>
+                </div>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

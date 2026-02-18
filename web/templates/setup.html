@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NS116 — Setup</title>
+  <meta name="description" content="Open-source web interface for DNS management">
+  <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;700;800&family=Inter:wght@400;500;600&family=Fira+Code&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'highway-green': '#009B3A',
+            'caution-yellow': '#FFCC00',
+            'connection-blue': '#007BFF',
+            'asphalt-dark': '#1A1A1A',
+            'reflective-white': '#F8F9FA',
+            'road-gray': '#E9ECEF'
+          },
+          fontFamily: {
+            'branding': ['Overpass', 'sans-serif'],
+            'body': ['Inter', 'sans-serif'],
+            'mono': ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gray-50 text-asphalt-dark font-body min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
+    <div class="p-8">
+      <div class="text-center mb-10">
+        <div class="mb-6">
+          <img src="/static/img/header.svg" alt="NS116 Setup" class="w-24 h-24 mx-auto">
+        </div>
+        <h1 class="font-branding font-bold text-3xl text-asphalt-dark mb-2">Initial Setup</h1>
+        <p class="text-gray-500 text-sm">Create the first Admin Account</p>
+      </div>
+
+      {{if .Error}}
+      <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm flex items-start gap-3 mb-6">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i>
+        <div>
+          <h5 class="font-bold text-red-900 text-sm">Error</h5>
+          <p class="text-sm text-red-700 mt-1">{{.Error}}</p>
+        </div>
+      </div>
+      {{end}}
+
+      <form method="POST" action="/setup" class="space-y-5">
+        <div>
+          <label class="block font-medium text-gray-700 text-sm mb-1.5">Username</label>
+          <div class="relative">
+            <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+            <input type="text" name="username" required autofocus
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue transition-all bg-gray-50 focus:bg-white"
+              placeholder="admin">
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-gray-700 text-sm mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+            <input type="password" name="password" required
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue transition-all bg-gray-50 focus:bg-white"
+              placeholder="••••••••">
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-gray-700 text-sm mb-1.5">Confirm Password</label>
+          <div class="relative">
+            <i data-lucide="lock-check" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+            <input type="password" name="confirm_password" required
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue transition-all bg-gray-50 focus:bg-white"
+              placeholder="••••••••">
+          </div>
+        </div>
+        <button type="submit"
+          class="w-full bg-highway-green hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-green-900/10 transition-all transform active:scale-95 flex items-center justify-center gap-2 mt-4">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+          Create Admin Account
+        </button>
+      </form>
+    </div>
+    <div class="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center">
+      <p class="text-xs text-gray-400 font-mono">Only shown on first run</p>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+
+</html>

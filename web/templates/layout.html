@@ -1,0 +1,118 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NS116{{if .Title}} — {{.Title}}{{end}}</title>
+  <meta name="description" content="Open-source web interface for DNS management">
+  <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;700;800&family=Inter:wght@400;500;600&family=Fira+Code&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'highway-green': '#009B3A',
+            'caution-yellow': '#FFCC00',
+            'connection-blue': '#007BFF',
+            'asphalt-dark': '#1A1A1A',
+            'reflective-white': '#F8F9FA',
+            'road-gray': '#E9ECEF'
+          },
+          fontFamily: {
+            'branding': ['Overpass', 'sans-serif'],
+            'body': ['Inter', 'sans-serif'],
+            'mono': ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-reflective-white text-asphalt-dark font-body min-h-screen flex flex-col">
+  <nav
+    class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shadow-sm sticky top-0 z-50">
+    <a href="/zones" class="flex items-center no-underline gap-3 group">
+      <!-- Shield Logo SVG -->
+      <img src="/static/img/header.svg" alt="NS116 Details" class="w-10 h-10 shrink-0">
+      <div class="hidden md:block">
+        <h1 class="font-branding font-bold text-xl leading-none uppercase tracking-tight text-asphalt-dark">NS116</h1>
+        <p class="font-mono text-xs text-gray-500 uppercase tracking-widest">DNS Manager</p>
+      </div>
+    </a>
+    {{if .Username}}
+    <div class="flex items-center gap-6">
+      {{if eq .Role "admin"}}
+      <div class="hidden md:flex items-center gap-6">
+        <a href="/admin/users"
+          class="font-branding font-semibold text-sm text-gray-600 hover:text-highway-green transition-colors">
+          Users
+        </a>
+        <a href="/admin/audit"
+          class="font-branding font-semibold text-sm text-gray-600 hover:text-highway-green transition-colors">
+          Audit
+        </a>
+      </div>
+      {{end}}
+      <div class="flex items-center gap-3 pl-6 border-l border-gray-200">
+        <span
+          class="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 border border-gray-200">{{.Username}}</span>
+        <form method="POST" action="/logout" class="inline">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors flex items-center"
+            title="Logout">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    {{end}}
+  </nav>
+
+  <main class="w-full max-w-7xl mx-auto flex-grow p-8">
+    {{if .Error}}
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm flex items-start gap-3 mb-8">
+      <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i>
+      <div>
+        <h5 class="font-bold text-red-900 text-sm">Error</h5>
+        <p class="text-sm text-red-700 mt-1">{{.Error}}</p>
+      </div>
+    </div>
+    {{end}}
+    {{if .Flash}}
+    <div class="bg-green-50 border-l-4 border-highway-green p-4 rounded-r-lg shadow-sm flex items-start gap-3 mb-8">
+      <i data-lucide="check-circle" class="w-5 h-5 text-highway-green shrink-0 mt-0.5"></i>
+      <div>
+        <h5 class="font-bold text-green-900 text-sm">Success</h5>
+        <p class="text-sm text-green-700 mt-1">{{.Flash}}</p>
+      </div>
+    </div>
+    {{end}}
+    {{template "content" .}}
+  </main>
+
+  <footer
+    class="border-t border-gray-200 py-8 text-center text-gray-500 text-xs font-mono uppercase tracking-wider bg-white mt-auto">
+    <div class="flex items-center justify-center gap-2 mb-4">
+      <div class="h-1 w-12 bg-highway-green rounded-full"></div>
+      <div class="h-1 w-2 bg-caution-yellow rounded-full"></div>
+      <div class="h-1 w-2 bg-connection-blue rounded-full"></div>
+    </div>
+    <p>NS116 — Open Source DNS Manager — v{{version}}</p>
+  </footer>
+
+  <script>lucide.createIcons();</script>
+</body>
+
+</html>
+{{end}}

@@ -1,0 +1,101 @@
+name: Build and Scan Docker Image
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - 'v*'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      actions: read
+      id-token: write
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.25.6'
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+
+    - name: Compile
+      run: |
+        VERSION=$(cat .version)
+        CGO_ENABLED=0 GOOS="linux" GOARCH="amd64" go build -trimpath -buildvcs=false -ldflags="-s -w -extldflags=-static -X 'github.com/rda-run/ns116/server/version.SemVer=${VERSION}'" -o bin/ns116
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set build metadata
+      id: meta
+      run: |
+        echo "version=$(cat .version)" >> $GITHUB_OUTPUT
+        echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+        echo "tag_name=$(echo '${{ github.ref_name }}' | sed 's/\//-/g')" >> $GITHUB_OUTPUT
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ steps.meta.outputs.tag_name }}
+          ${{ startsWith(github.ref, 'refs/tags/v') && format('ghcr.io/{0}/{1}:latest', github.repository_owner, github.event.repository.name) || '' }}
+        build-args: |
+          VERSION=${{ steps.meta.outputs.version }}
+          BUILD_DATE=${{ steps.meta.outputs.build_date }}
+
+    - name: Sign Docker image with Cosign
+      env:
+        COSIGN_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        DIGEST: ${{ steps.build.outputs.digest }}
+        TAGS: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ steps.meta.outputs.tag_name }}
+      run: |
+        cosign sign --key env://COSIGN_KEY --yes "${TAGS}@${DIGEST}"
+
+    - uses: anchore/scan-action@7c05671ae9be166aeb155bad2d7df9121823df32 # v6
+      id: scan
+      with:
+        image: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ steps.meta.outputs.tag_name }}
+        fail-build: false
+    - name: upload Anchore scan SARIF report
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: ${{ steps.scan.outputs.sarif }}
+
+    - name: Clean untagged images
+      uses: quartx-analytics/ghcr-cleaner@c5bc55c485430d975158aa4b4c46a14228644be8 # v1.0.2
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        owner-type: org
+        token: ${{ secrets.CLEANUP_TOKEN }}
+        repository-owner: ${{ github.repository_owner }}
+        package-name: ${{ github.event.repository.name }}
+        delete-untagged: true
+
+    - name: Clean branch images
+      uses: quartx-analytics/ghcr-cleaner@c5bc55c485430d975158aa4b4c46a14228644be8 # v1.0.2
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        owner-type: org
+        token: ${{ secrets.CLEANUP_TOKEN }}
+        repository-owner: ${{ github.repository_owner }}
+        package-name: ${{ github.event.repository.name }}
+        delete-untagged: false
+        keep-at-most: 0
+        skip-tags: v*,latest

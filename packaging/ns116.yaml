@@ -1,0 +1,21 @@
+server:
+  port: 8080
+  host: "0.0.0.0"
+
+database:
+  # DSN (Data Source Name) connection string
+  # Example: postgres://user:password@localhost:5432/ns116?sslmode=disable
+  dsn: "postgres://ns116:ns116pass@localhost:5432/ns116?sslmode=disable"
+
+aws:
+  access_key_id: "AKIA****************"
+  secret_access_key: "********************************"
+  region: "us-east-1"
+
+# Only these zones will be visible and editable.
+# If empty or omitted, ALL zones in the account will be listed.
+hosted_zones: []
+#  - id: "****************"
+#    label: "example.com"
+#  - id: "****************"
+#    label: "internal.corp"

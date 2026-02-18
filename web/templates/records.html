@@ -1,0 +1,402 @@
+{{define "content"}}
+<div class="mb-8">
+  <div class="flex items-center gap-2 mb-4 font-mono text-sm">
+    <a href="/zones" class="text-gray-500 hover:text-connection-blue transition-colors flex items-center gap-1">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i> Zones
+    </a>
+    <span class="text-gray-300">/</span>
+    <span class="text-asphalt-dark font-bold">{{.ZoneName}}</span>
+  </div>
+
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-6">
+    <div>
+      <h2 class="text-3xl font-branding font-bold text-asphalt-dark">{{.ZoneName}}</h2>
+      <p class="text-gray-500 mt-1">Manage DNS records for this zone</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full border border-gray-200">
+        {{len .Records}} RECORD{{if ne (len .Records) 1}}S{{end}}
+      </span>
+      <form method="POST" action="/zones/{{.ZoneID}}/records/refresh" class="inline">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button type="submit" title="Refresh from AWS" onclick="this.querySelector('svg').classList.add('animate-spin')"
+          class="bg-white border border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50 p-2 rounded-lg shadow-sm transition-all">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+        </button>
+      </form>
+      <button onclick="document.getElementById('add-form').classList.toggle('hidden')"
+        class="bg-highway-green hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-green-900/10 transition-all transform active:scale-95 flex items-center gap-2">
+        <i data-lucide="plus" class="w-5 h-5"></i> Add Record
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Record Form -->
+<div id="add-form" class="hidden mb-10">
+  <div class="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+    <h3 class="text-xl font-branding font-bold text-asphalt-dark mb-6 flex items-center gap-2">
+      <i data-lucide="plus-circle" class="w-6 h-6 text-highway-green"></i> Add New Record
+    </h3>
+    <form method="POST" action="/zones/{{.ZoneID}}/records/create">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <div class="space-y-6 mb-6">
+        <div>
+          <label class="block font-medium text-gray-700 text-sm mb-1.5">Record Name</label>
+          <div
+            class="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-connection-blue/50 focus-within:border-connection-blue transition-all">
+            <input type="text" name="name" required placeholder="subdomain"
+              class="flex-1 p-3 font-mono text-sm bg-gray-50 focus:bg-white outline-none min-w-0 placeholder-gray-400">
+            <span
+              class="bg-gray-100 border-l border-gray-300 p-3 font-mono text-sm whitespace-nowrap text-gray-500">.{{.ZoneDomain}}</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block font-medium text-gray-700 text-sm mb-1.5">Type</label>
+            <div class="relative">
+              <select name="type" required
+                class="w-full appearance-none border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue">
+                <option value="A">A</option>
+                <option value="AAAA">AAAA</option>
+                <option value="CNAME">CNAME</option>
+                <option value="MX">MX</option>
+                <option value="TXT">TXT</option>
+                <option value="NS">NS</option>
+                <option value="SRV">SRV</option>
+                <option value="CAA">CAA</option>
+                <option value="PTR">PTR</option>
+              </select>
+              <i data-lucide="chevron-down"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i>
+            </div>
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 text-sm mb-1.5">TTL (seconds)</label>
+            <input type="number" name="ttl" value="300" required
+              class="w-full border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue placeholder-gray-400">
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 text-sm mb-1.5">Value</label>
+            <input type="text" name="value" required placeholder="1.2.3.4"
+              class="w-full border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue placeholder-gray-400">
+          </div>
+        </div>
+      </div>
+      <div id="extra-values" class="space-y-2"></div>
+
+      <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
+        <button type="submit"
+          class="bg-highway-green hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-colors flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> Create Record
+        </button>
+        <button type="button" onclick="addValueField()"
+          class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add Value
+        </button>
+        <button type="button" onclick="document.getElementById('add-form').classList.add('hidden')"
+          class="ml-auto text-gray-500 hover:text-red-500 hover:underline text-sm font-medium">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Search -->
+{{if .Records}}
+<div class="mb-6">
+  <div class="relative group">
+    <i data-lucide="search"
+      class="w-5 h-5 text-gray-400 group-focus-within:text-connection-blue absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors"></i>
+    <input type="text" id="record-search" placeholder="Filter records..."
+      class="w-full border border-gray-300 rounded-lg p-3 pl-12 font-mono text-sm bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue placeholder-gray-400 transition-all"
+      oninput="filterRecords(this.value)">
+  </div>
+</div>
+{{end}}
+
+<!-- Records List (Table) -->
+{{if .Records}}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  <table class="w-full text-left border-collapse" id="records-list">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-16">Type</th>
+        <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
+        <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Value</th>
+        <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-24">TTL</th>
+        <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right w-32">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {{range .Records}}
+      <tr class="record-card hover:bg-blue-50/50 transition-colors group"
+        data-search="{{.Name}} {{range .Values}}{{.}} {{end}}{{.AliasTarget}}">
+        <td class="p-4 align-top">
+          <span class="inline-block text-xs font-bold px-2 py-0.5 rounded shadow-sm text-white text-center min-w-[3.5rem]
+              {{if eq .Type " A"}}bg-highway-green {{else if eq .Type "CNAME" }}bg-purple-600 {{else if eq .Type "TXT"
+            }}bg-gray-500 {{else if eq .Type "MX" }}bg-orange-500 {{else if eq .Type "NS" }}bg-blue-800
+            {{else}}bg-connection-blue{{end}}">
+            {{.Type}}
+          </span>
+        </td>
+        <td class="p-4 align-top">
+          <span class="font-mono font-medium text-asphalt-dark text-sm break-all">{{.Name}}</span>
+        </td>
+        <td class="p-4 align-top">
+          <div class="font-mono text-sm text-gray-600 space-y-1">
+            {{if .IsAlias}}
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] uppercase bg-asphalt-dark text-white px-1.5 py-0.5 rounded">ALIAS</span>
+              <span
+                class="text-connection-blue underline decoration-dotted underline-offset-2 break-all">{{.AliasTarget}}</span>
+            </div>
+            {{else}}
+            {{range .Values}}
+            <div class="break-all">{{.}}</div>
+            {{end}}
+            {{end}}
+          </div>
+        </td>
+        <td class="p-4 align-top">
+          {{if not .IsAlias}}
+          <span class="font-mono text-xs text-gray-500">{{.TTL}}</span>
+          {{else}}
+          <span class="text-gray-300">-</span>
+          {{end}}
+        </td>
+        <td class="p-4 align-top text-right">
+          {{if and (ne .Type "SOA") (ne .Type "NS")}}
+          <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="showEditForm(this)" data-name="{{.Name}}" data-type="{{.Type}}" data-ttl="{{.TTL}}"
+              data-values="{{range $i, $v := .Values}}{{if $i}}||{{end}}{{$v}}{{end}}"
+              class="text-gray-400 hover:text-caution-yellow transition-colors p-1" title="Edit">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+
+            <form method="POST" action="/zones/{{$.ZoneID}}/records/delete" class="inline"
+              onsubmit="return confirm('Delete this record?')">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="name" value="{{.Name}}">
+              <input type="hidden" name="type" value="{{.Type}}">
+              <input type="hidden" name="ttl" value="{{.TTL}}">
+              {{range .Values}}<input type="hidden" name="value" value="{{.}}">{{end}}
+              <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Delete">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </form>
+          </div>
+          {{end}}
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+<div id="no-search-results" class="hidden bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+  <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-50 rounded-full mb-4">
+    <i data-lucide="search-x" class="w-8 h-8 text-gray-400"></i>
+  </div>
+  <h3 class="text-lg font-branding font-bold text-gray-900 mb-1">No matching records</h3>
+  <p class="text-gray-500 text-sm">Try a different search term.</p>
+</div>
+
+{{else}}
+<div class="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+  <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-50 rounded-full mb-6">
+    <i data-lucide="file-question" class="w-10 h-10 text-gray-400"></i>
+  </div>
+  <h3 class="text-xl font-branding font-bold text-gray-900 mb-2">No records found</h3>
+  <p class="text-gray-500 max-w-md mx-auto">Add your first DNS record using the button above.</p>
+</div>
+{{end}}
+
+<!-- Edit Modal -->
+<div id="edit-modal"
+  class="hidden fixed inset-0 bg-asphalt-dark/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+  <div class="bg-white rounded-xl border border-gray-200 p-8 w-full max-w-lg shadow-2xl transform transition-all">
+    <h3 class="text-xl font-branding font-bold text-asphalt-dark mb-6 flex items-center gap-2">
+      <i data-lucide="edit-3" class="w-6 h-6 text-caution-yellow"></i> Edit Record
+    </h3>
+    <form method="POST" action="/zones/{{.ZoneID}}/records/edit" id="edit-form">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input type="hidden" name="original_name" id="edit-original-name">
+      <input type="hidden" name="original_type" id="edit-original-type">
+      <input type="hidden" name="original_ttl" id="edit-original-ttl">
+      <div id="edit-original-values"></div>
+
+      <div class="space-y-6">
+        <div>
+          <label class="block font-medium text-gray-700 text-sm mb-1.5">Name</label>
+          <div
+            class="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-connection-blue/50 focus-within:border-connection-blue">
+            <input type="text" name="name" id="edit-name" required
+              class="flex-1 p-3 font-mono text-sm bg-gray-50 focus:bg-white outline-none min-w-0 placeholder-gray-400">
+            <span
+              class="bg-gray-100 border-l border-gray-300 p-3 font-mono text-sm whitespace-nowrap text-gray-500">.{{.ZoneDomain}}</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <label class="block font-medium text-gray-700 text-sm mb-1.5">Type</label>
+            <div class="relative">
+              <select name="type" id="edit-type" required
+                class="w-full appearance-none border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue">
+                <option value="A">A</option>
+                <option value="AAAA">AAAA</option>
+                <option value="CNAME">CNAME</option>
+                <option value="MX">MX</option>
+                <option value="TXT">TXT</option>
+                <option value="NS">NS</option>
+                <option value="SRV">SRV</option>
+                <option value="CAA">CAA</option>
+                <option value="PTR">PTR</option>
+              </select>
+              <i data-lucide="chevron-down"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i>
+            </div>
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 text-sm mb-1.5">TTL</label>
+            <input type="number" name="ttl" id="edit-ttl" required
+              class="w-full border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-gray-700 text-sm mb-1.5">Values</label>
+          <div id="edit-values-container" class="space-y-2"></div>
+          <button type="button" onclick="addEditValueField()"
+            class="mt-2 w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Value
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
+        <button type="submit"
+          class="flex-1 bg-asphalt-dark text-white hover:bg-black transition-colors px-6 py-3 rounded-lg font-bold shadow-sm flex items-center justify-center gap-2">
+          <i data-lucide="save" class="w-5 h-5"></i> Save Changes
+        </button>
+        <button type="button" onclick="document.getElementById('edit-modal').classList.add('hidden')"
+          class="px-6 py-3 text-gray-500 hover:text-red-500 hover:underline text-sm font-medium">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function filterRecords(query) {
+    const q = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('.record-card');
+    const table = document.getElementById('records-list');
+    const empty = document.getElementById('no-search-results');
+    let visible = 0;
+
+    rows.forEach(function (row) {
+      const text = (row.dataset.search || '').toLowerCase();
+      if (!q || text.includes(q)) {
+        row.style.display = '';
+        visible++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    if (table) table.style.display = visible ? '' : 'none'; // This hides the whole table if no rows
+    // Wait, hiding the table hides the header too. Better to just hide rows. 
+    // But if no rows match, we want to show "No matching records" and maybe hide header?
+    // Let's keep header visible if we want, or hide it. 
+    // UI Kit behavior: usually hide table if empty.
+
+    // Correction: if I hide the table, I hide the header. 
+    // Let's hide the table (including header) if no results found.
+    if (table) table.style.display = visible ? 'table' : 'none'; // Restore display:table
+
+    if (empty) empty.classList.toggle('hidden', visible > 0);
+  }
+
+  function addValueField() {
+    const container = document.getElementById('extra-values');
+    const div = document.createElement('div');
+    div.className = 'flex gap-2 mt-2';
+    div.innerHTML = `
+    <input type="text" name="value" placeholder="Additional value"
+      class="flex-1 border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue">
+    <button type="button" onclick="this.parentElement.remove()"
+      class="border border-red-200 bg-red-50 text-red-500 px-3 hover:bg-red-100 rounded-lg transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  `;
+    container.appendChild(div);
+    lucide.createIcons();
+  }
+
+  const zoneDomain = '{{.ZoneDomain}}';
+
+  function stripDomain(fqdn) {
+    const suffix = '.' + zoneDomain;
+    if (fqdn === zoneDomain) return '@';
+    if (fqdn.endsWith(suffix)) return fqdn.slice(0, -suffix.length);
+    return fqdn;
+  }
+
+  function showEditForm(btn) {
+    const name = btn.dataset.name;
+    const type = btn.dataset.type;
+    const ttl = btn.dataset.ttl;
+    const values = btn.dataset.values ? btn.dataset.values.split('||') : [''];
+
+    document.getElementById('edit-original-name').value = name;
+    document.getElementById('edit-original-type').value = type;
+    document.getElementById('edit-original-ttl').value = ttl;
+    document.getElementById('edit-name').value = stripDomain(name);
+    document.getElementById('edit-type').value = type;
+    document.getElementById('edit-ttl').value = ttl;
+
+    const origContainer = document.getElementById('edit-original-values');
+    origContainer.innerHTML = '';
+    values.forEach(function (v) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'original_value';
+      input.value = v;
+      origContainer.appendChild(input);
+    });
+
+    const container = document.getElementById('edit-values-container');
+    container.innerHTML = '';
+    values.forEach(function (v) {
+      addEditValueFieldWithValue(v);
+    });
+
+    document.getElementById('edit-modal').classList.remove('hidden');
+    lucide.createIcons();
+  }
+
+  function addEditValueField() {
+    addEditValueFieldWithValue('');
+  }
+
+  function addEditValueFieldWithValue(val) {
+    const container = document.getElementById('edit-values-container');
+    const div = document.createElement('div');
+    div.className = 'flex gap-2 mb-2';
+    div.innerHTML = `
+    <input type="text" name="value" value="${val.replace(/"/g, '&quot;')}" required
+      class="flex-1 border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue">
+    <button type="button" onclick="this.parentElement.remove()"
+      class="border border-red-200 bg-red-50 text-red-500 px-3 hover:bg-red-100 rounded-lg transition-colors">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  `;
+    container.appendChild(div);
+  }
+</script>
+{{end}}

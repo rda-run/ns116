@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NS116 - UI Kit V2 (Light Theme)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;700;800&family=Inter:wght@400;500;600&family=Fira+Code&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --highway-green: #009B3A;
+      --caution-yellow: #FFCC00;
+      --connection-blue: #007BFF;
+      --asphalt-dark: #1A1A1A;
+      --reflective-white: #F8F9FA;
+      --concrete-gray: #E9ECEF;
+      --danger-red: #DC3545;
+    }
+
+    body {
+      background-color: var(--concrete-gray);
+      /* Fundo cinza claro */
+      color: var(--asphalt-dark);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .font-branding {
+      font-family: 'Overpass', sans-serif;
+    }
+
+    .font-mono {
+      font-family: 'Fira Code', monospace;
+    }
+
+    .bg-highway-green {
+      background-color: var(--highway-green);
+    }
+
+    .text-highway-green {
+      color: var(--highway-green);
+    }
+
+    .border-highway-green {
+      border-color: var(--highway-green);
+    }
+
+    .bg-caution-yellow {
+      background-color: var(--caution-yellow);
+    }
+
+    .text-caution-yellow {
+      color: var(--caution-yellow);
+    }
+
+    .bg-connection-blue {
+      background-color: var(--connection-blue);
+    }
+
+    .text-connection-blue {
+      color: var(--connection-blue);
+    }
+
+    .bg-asphalt-dark {
+      background-color: var(--asphalt-dark);
+    }
+
+    /* Custom Scrollbar subtle */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'highway-green': '#009B3A',
+            'caution-yellow': '#FFCC00',
+            'connection-blue': '#007BFF',
+            'asphalt-dark': '#1A1A1A',
+            'reflective-white': '#F8F9FA',
+            'concrete-gray': '#E9ECEF',
+          },
+          fontFamily: {
+            'branding': ['Overpass', 'sans-serif'],
+            'body': ['Inter', 'sans-serif'],
+            'mono': ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header Simulado do App -->
+  <nav
+    class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shadow-sm sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <!-- Logo Simplificado -->
+      <div
+        class="w-10 h-10 bg-highway-green rounded-full flex items-center justify-center text-white shadow-lg shadow-green-200">
+        <i data-lucide="cloud" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="font-branding font-bold text-2xl leading-none text-asphalt-dark tracking-tight">NS116</h1>
+        <p class="font-mono text-xs text-gray-500 uppercase tracking-widest">DNS Manager</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="#"
+        class="font-branding font-semibold text-sm text-gray-600 hover:text-highway-green transition-colors">Zones</a>
+      <a href="#"
+        class="font-branding font-semibold text-sm text-gray-600 hover:text-highway-green transition-colors">Audit
+        Log</a>
+      <div class="flex items-center gap-3 pl-6 border-l border-gray-200">
+        <span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 border border-gray-200">admin</span>
+        <button class="text-gray-400 hover:text-red-500 transition-colors">
+          <i data-lucide="log-out" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto p-8 lg:p-12">
+
+    <!-- Header da Página Exemplo -->
+    <header class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div>
+        <h1 class="text-4xl font-branding font-bold text-asphalt-dark mb-3">UI Kit V2 <span
+            class="text-highway-green">Light Theme</span></h1>
+        <p class="text-gray-600 max-w-2xl text-lg">
+          Retorno às origens: Um design limpo, profissional e com alto contraste, inspirado nas rodovias brasileiras.
+          Foco em legibilidade e usabilidade.
+        </p>
+      </div>
+      <div
+        class="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm text-sm font-mono text-gray-500">
+        <span class="w-2 h-2 rounded-full bg-highway-green animate-pulse"></span>
+        System Online
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+      <!-- Left Column (Core Elements) -->
+      <div class="lg:col-span-4 space-y-12">
+
+        <!-- Colors -->
+        <section>
+          <h3
+            class="text-xs font-branding font-bold uppercase tracking-widest text-gray-400 mb-6 border-b border-gray-200 pb-2">
+            01. Identidade Visual</h3>
+          <div class="space-y-3">
+            <div
+              class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded bg-highway-green shadow-sm"></div>
+                <div>
+                  <p class="font-bold text-sm">Highway Green</p>
+                  <p class="text-xs text-gray-500">Ação Primária / Sucesso</p>
+                </div>
+              </div>
+              <span class="font-mono text-xs text-gray-400">#009B3A</span>
+            </div>
+            <div
+              class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded bg-caution-yellow shadow-sm"></div>
+                <div>
+                  <p class="font-bold text-sm">Caution Yellow</p>
+                  <p class="text-xs text-gray-500">Atenção / Edição</p>
+                </div>
+              </div>
+              <span class="font-mono text-xs text-gray-400">#FFCC00</span>
+            </div>
+            <div
+              class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded bg-connection-blue shadow-sm"></div>
+                <div>
+                  <p class="font-bold text-sm">Connection Blue</p>
+                  <p class="text-xs text-gray-500">Links / Informação</p>
+                </div>
+              </div>
+              <span class="font-mono text-xs text-gray-400">#007BFF</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Buttons -->
+        <section>
+          <h3
+            class="text-xs font-branding font-bold uppercase tracking-widest text-gray-400 mb-6 border-b border-gray-200 pb-2">
+            02. Botões e Ações</h3>
+          <div class="flex flex-col gap-4">
+            <button
+              class="bg-highway-green hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-green-900/10 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+              <i data-lucide="plus" class="w-5 h-5"></i>
+              Adicionar Registro
+            </button>
+            <button
+              class="bg-white border border-gray-300 hover:border-gray-400 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-lg font-semibold shadow-sm transition-all flex items-center justify-center gap-2">
+              <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400"></i>
+              Atualizar Lista
+            </button>
+            <div class="flex gap-3">
+              <button
+                class="flex-1 bg-white border border-yellow-400 text-yellow-700 hover:bg-yellow-50 px-4 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2">
+                <i data-lucide="edit-2" class="w-4 h-4"></i> Editar
+              </button>
+              <button
+                class="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 px-4 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> Excluir
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column (Components) -->
+      <div class="lg:col-span-8 space-y-12">
+
+        <!-- Zone Cards (Dashboard) -->
+        <section>
+          <h3
+            class="text-xs font-branding font-bold uppercase tracking-widest text-gray-400 mb-6 border-b border-gray-200 pb-2">
+            03. Dashboard Cards (Zonas)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Active Zone Card -->
+            <div
+              class="bg-white rounded-xl border border-highway-green shadow-lg shadow-green-900/5 p-6 relative overflow-hidden group hover:shadow-xl transition-all cursor-pointer">
+              <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i data-lucide="globe" class="w-24 h-24 text-highway-green"></i>
+              </div>
+              <div class="flex justify-between items-start mb-4 relative z-10">
+                <div>
+                  <h4 class="font-branding font-bold text-xl text-asphalt-dark">ns116.com.br</h4>
+                  <span class="text-xs font-mono text-gray-500">Z1PA6795UKMFR9</span>
+                </div>
+                <span
+                  class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full border border-green-200">Active</span>
+              </div>
+              <div class="grid grid-cols-2 gap-4 mt-6 relative z-10">
+                <div>
+                  <p class="text-xs text-gray-500 uppercase font-bold">Records</p>
+                  <p class="text-2xl font-mono font-semibold text-asphalt-dark">42</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs text-gray-500 uppercase font-bold">Last Update</p>
+                  <p class="text-sm font-mono text-gray-600">2m ago</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inactive/Other Zone Card -->
+            <div
+              class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:border-gray-300 transition-all cursor-pointer">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h4 class="font-branding font-bold text-xl text-gray-700">dev.internal</h4>
+                  <span class="text-xs font-mono text-gray-400">Z2QA3195UKLPO0</span>
+                </div>
+                <span
+                  class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full border border-gray-200">Private</span>
+              </div>
+              <div class="mt-6 flex items-center justify-between">
+                <span class="text-sm text-gray-500"><i data-lucide="layers" class="inline w-4 h-4 mr-1"></i> 12
+                  Records</span>
+                <i data-lucide="arrow-right"
+                  class="w-5 h-5 text-gray-400 group-hover:text-highway-green transition-colors"></i>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Data Table (Records) -->
+        <section>
+          <h3
+            class="text-xs font-branding font-bold uppercase tracking-widest text-gray-400 mb-6 border-b border-gray-200 pb-2">
+            04. Data Table (Registros)</h3>
+
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-gray-50 border-b border-gray-200">
+                  <th class="p-4 text-xs font-bold text-gray-500 uppercase">Record Name</th>
+                  <th class="p-4 text-xs font-bold text-gray-500 uppercase">Type</th>
+                  <th class="p-4 text-xs font-bold text-gray-500 uppercase">Value / Target</th>
+                  <th class="p-4 text-xs font-bold text-gray-500 uppercase">TTL</th>
+                  <th class="p-4 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <!-- Row 1: A Record -->
+                <tr class="hover:bg-blue-50/50 transition-colors group">
+                  <td class="p-4 font-mono font-medium text-asphalt-dark">api</td>
+                  <td class="p-4">
+                    <span class="bg-highway-green text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">A</span>
+                  </td>
+                  <td class="p-4 font-mono text-sm text-gray-600">54.232.12.98</td>
+                  <td class="p-4 font-mono text-xs text-gray-400">300</td>
+                  <td class="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="text-gray-400 hover:text-caution-yellow mr-2"><i data-lucide="edit-2"
+                        class="w-4 h-4"></i></button>
+                    <button class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2"
+                        class="w-4 h-4"></i></button>
+                  </td>
+                </tr>
+                <!-- Row 2: CNAME Record -->
+                <tr class="hover:bg-blue-50/50 transition-colors group">
+                  <td class="p-4 font-mono font-medium text-asphalt-dark">www</td>
+                  <td class="p-4">
+                    <span class="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">CNAME</span>
+                  </td>
+                  <td class="p-4 font-mono text-sm text-connection-blue underline decoration-dotted underline-offset-4">
+                    ns116.com.br</td>
+                  <td class="p-4 font-mono text-xs text-gray-400">3600</td>
+                  <td class="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="text-gray-400 hover:text-caution-yellow mr-2"><i data-lucide="edit-2"
+                        class="w-4 h-4"></i></button>
+                    <button class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2"
+                        class="w-4 h-4"></i></button>
+                  </td>
+                </tr>
+                <!-- Row 3: TXT Record -->
+                <tr class="hover:bg-blue-50/50 transition-colors group">
+                  <td class="p-4 font-mono font-medium text-asphalt-dark">_dmarc</td>
+                  <td class="p-4">
+                    <span class="bg-gray-500 text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">TXT</span>
+                  </td>
+                  <td class="p-4 font-mono text-xs text-gray-500 truncate max-w-xs">"v=DMARC1; p=none; rua=mailto:..."
+                  </td>
+                  <td class="p-4 font-mono text-xs text-gray-400">86400</td>
+                  <td class="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="text-gray-400 hover:text-caution-yellow mr-2"><i data-lucide="edit-2"
+                        class="w-4 h-4"></i></button>
+                    <button class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2"
+                        class="w-4 h-4"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+
+        <!-- Alert Messages -->
+        <section>
+          <h3
+            class="text-xs font-branding font-bold uppercase tracking-widest text-gray-400 mb-6 border-b border-gray-200 pb-2">
+            05. Feedback (Alerts)</h3>
+          <div class="space-y-4">
+            <div class="bg-green-50 border-l-4 border-highway-green p-4 rounded-r-lg shadow-sm flex items-start gap-3">
+              <i data-lucide="check-circle" class="w-5 h-5 text-highway-green shrink-0 mt-0.5"></i>
+              <div>
+                <h5 class="font-bold text-green-900 text-sm">Registro criado com sucesso!</h5>
+                <p class="text-sm text-green-700 mt-1">O registro <strong>api.ns116.com.br</strong> foi propagado para a
+                  edge.</p>
+              </div>
+            </div>
+
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm flex items-start gap-3">
+              <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 shrink-0 mt-0.5"></i>
+              <div>
+                <h5 class="font-bold text-red-900 text-sm">Erro ao salvar</h5>
+                <p class="text-sm text-red-700 mt-1">Conflito de IP: O endereço <strong>192.168.1.1</strong> já está em
+                  uso.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-20 border-t border-gray-200 pt-8 text-center">
+      <div class="flex items-center justify-center gap-2 mb-4">
+        <div class="h-1 w-12 bg-highway-green rounded-full"></div>
+        <div class="h-1 w-2 bg-caution-yellow rounded-full"></div>
+        <div class="h-1 w-2 bg-connection-blue rounded-full"></div>
+      </div>
+      <p class="text-xs font-mono text-gray-400 uppercase tracking-widest">NS116 Open Source Project</p>
+    </footer>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+
+</html>

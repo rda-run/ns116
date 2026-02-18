@@ -1,0 +1,30 @@
+:root {
+  --highway-green: #009B3A;
+  --caution-yellow: #FFCC00;
+  --connection-blue: #007BFF;
+  --asphalt-dark: #1A1A1A;
+  --reflective-white: #F8F9FA;
+  --concrete-gray: #E9ECEF;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+::selection {
+  background: var(--highway-green);
+  color: #fff;
+}

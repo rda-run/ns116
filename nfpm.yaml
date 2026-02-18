@@ -1,0 +1,35 @@
+name: ns116
+arch: amd64
+platform: linux
+version: v${VERSION}
+maintainer: rda.run
+description: Web interface for managing DNS records
+vendor: rda.run
+homepage: https://ns116.rda.run
+license: MIT
+
+contents:
+  - src: bin/ns116
+    dst: /usr/bin/ns116
+    file_info:
+      mode: 0755
+
+  - src: packaging/ns116.yaml
+    dst: /etc/ns116.yaml
+    type: config|noreplace
+    file_info:
+      mode: 0640
+      owner: root
+      group: ns116
+
+  - src: packaging/ns116.service
+    dst: /usr/lib/systemd/system/ns116.service
+    file_info:
+      mode: 0644
+
+scripts:
+  preinstall: packaging/preinstall.sh
+  postinstall: packaging/postinstall.sh
+
+rpm:
+  group: Applications/Internet

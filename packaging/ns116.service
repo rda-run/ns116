@@ -1,0 +1,14 @@
+[Unit]
+Description=NS116 — Route53 DNS Manager
+After=network.target
+
+[Service]
+Type=simple
+User=ns116
+Group=ns116
+ExecStart=/usr/bin/ns116 --config /etc/ns116.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
