@@ -87,7 +87,7 @@
       <div id="extra-values" class="space-y-2"></div>
 
       <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
-        <button type="submit"
+        <button type="submit" onclick="this.innerHTML='<i data-lucide=\'loader-2\' class=\'w-4 h-4 animate-spin\'></i> Processing...'; lucide.createIcons()"
           class="bg-highway-green hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-colors flex items-center gap-2">
           <i data-lucide="check" class="w-4 h-4"></i> Create Record
         </button>
@@ -183,7 +183,7 @@
               <input type="hidden" name="type" value="{{.Type}}">
               <input type="hidden" name="ttl" value="{{.TTL}}">
               {{range .Values}}<input type="hidden" name="value" value="{{.}}">{{end}}
-              <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Delete">
+              <button type="submit" onclick="this.innerHTML='<i data-lucide=\'loader-2\' class=\'w-4 h-4 animate-spin\'></i>'; lucide.createIcons()" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Delete">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
             </form>
@@ -278,7 +278,7 @@
       </div>
 
       <div class="flex items-center gap-4 mt-8 pt-6 border-t border-gray-100">
-        <button type="submit"
+        <button type="submit" onclick="this.innerHTML='<i data-lucide=\'loader-2\' class=\'w-5 h-5 animate-spin\'></i> Saving...'; lucide.createIcons()"
           class="flex-1 bg-asphalt-dark text-white hover:bg-black transition-colors px-6 py-3 rounded-lg font-bold shadow-sm flex items-center justify-center gap-2">
           <i data-lucide="save" class="w-5 h-5"></i> Save Changes
         </button>
