@@ -148,12 +148,70 @@ else
                 echo " - $group"
              done
              ADMIN_GROUP_DN=$(echo "$GROUP_SEARCH_POSIX" | head -n1 | sed 's/^dn: //')
-        else
-            echo "${RED}⚠ No groups found for this user.${RESET}"
-            echo "You will need to manually fill in the Group DN in the configuration."
-            ADMIN_GROUP_DN="CN=DNS-Admins,OU=Groups,$BASE_DN"
-        fi
+    else
+        echo "${RED}⚠ No groups found for this user.${RESET}"
+        echo "Please verify if the user is a member of any group."
     fi
+fi
+
+# 5. Specify and Validate Roles
+echo ""
+echo "${YELLOW}Step 4: Role Configuration${RESET}"
+echo "We detected potential group candidates above. Now, please specify which groups should be mapped to NS116 roles."
+echo "You can copy-paste from the list above."
+
+# Function to check if user is in a group (string match from founded groups)
+check_membership() {
+    local target_group="$1"
+    # MEMBEROF or GROUP_SEARCH contains the list of groups found
+    if echo "$MEMBEROF$GROUP_SEARCH$GROUP_SEARCH_POSIX" | grep -Fq "$target_group"; then
+        return 0 # True
+    else
+        return 1 # False
+    fi
+}
+
+# Admin Group
+while true; do
+    read -p "Enter LDAP Group DN for ADMIN role (default: $ADMIN_GROUP_DN): " INPUT_ADMIN
+    ACTUAL_ADMIN="${INPUT_ADMIN:-$ADMIN_GROUP_DN}"
+    
+    if [ -z "$ACTUAL_ADMIN" ]; then
+        echo "${RED}Admin group cannot be empty.${RESET}"
+        continue
+    fi
+    
+    if check_membership "$ACTUAL_ADMIN"; then
+        echo "${GREEN}✔ User '$TEST_USER' is a member of this Admin group.${RESET}"
+    else
+        echo "${YELLOW}⚠ User '$TEST_USER' is NOT a member of '$ACTUAL_ADMIN'.${RESET}"
+        echo "This is fine if you are configuring for other users, but double-check spelling."
+    fi
+    break
+done
+
+# Editor Group
+read -p "Enter LDAP Group DN for EDITOR role (optional): " INPUT_EDITOR
+ACTUAL_EDITOR="$INPUT_EDITOR"
+
+IS_ADMIN=0
+IS_EDITOR=0
+
+if check_membership "$ACTUAL_ADMIN"; then IS_ADMIN=1; fi
+if [ ! -z "$ACTUAL_EDITOR" ] && check_membership "$ACTUAL_EDITOR"; then IS_EDITOR=1; fi
+
+# Check Conflict/Precedence
+echo ""
+echo "${YELLOW}Checking Permissions for '$TEST_USER'...${RESET}"
+if [ $IS_ADMIN -eq 1 ] && [ $IS_EDITOR -eq 1 ]; then
+    echo "User is in BOTH Admin and Editor groups."
+    echo "NS116 Logic: ${GREEN}ADMIN wins${RESET} (First match priority: Admin -> Editor)."
+elif [ $IS_ADMIN -eq 1 ]; then
+    echo "User is in Admin group only -> Role: ${GREEN}ADMIN${RESET}"
+elif [ $IS_EDITOR -eq 1 ]; then
+    echo "User is in Editor group only -> Role: ${GREEN}EDITOR${RESET}"
+else
+    echo "${RED}User is in NEITHER group -> Access Denied.${RESET}"
 fi
 
 # 5. Generate Configuration
@@ -181,8 +239,8 @@ else
 fi
 echo "  group_mapping:"
 echo "    # Replace with the actual groups from your directory"
-echo "    admin: \"$ADMIN_GROUP_DN\""
-echo "    editor: \"CN=DNS-Editors,OU=Groups,$BASE_DN\""
+echo "    admin: \"$ACTUAL_ADMIN\""
+echo "    editor: \"${ACTUAL_EDITOR:-CN=DNS-Editors,OU=Groups,$BASE_DN}\""
 
 echo ""
 echo "${YELLOW}=== IMPORTANT NOTES ===${RESET}"
