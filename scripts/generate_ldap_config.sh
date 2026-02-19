@@ -171,6 +171,14 @@ echo "  base_dn: \"$BASE_DN\""
 echo "  user_filter: \"$USER_FILTER\""
 echo "  username_attr: \"$LOGIN_ATTR\""
 echo "  email_attr: \"$USER_EMAIL_ATTR\""
+if [ "$GROUP_STRATEGY" = "posix_group" ]; then
+    echo "  # POSIX Group Configuration (memberUid)"
+    echo "  group_filter: \"(&(objectClass=posixGroup)(memberUid=%u))\""
+else
+    echo "  # Standard Group Configuration (member/uniqueMember)"
+    echo "  # Default Value (implied): (|(member=%s)(uniqueMember=%s))"
+    echo "  group_filter: \"\""
+fi
 echo "  group_mapping:"
 echo "    # Replace with the actual groups from your directory"
 echo "    admin: \"$ADMIN_GROUP_DN\""
@@ -183,8 +191,7 @@ if [ "$GROUP_STRATEGY" = "reverse_search_dn" ]; then
 elif [ "$GROUP_STRATEGY" = "memberOf" ]; then
      echo "Your LDAP supports memberOf. NS116 supports this natively."
 elif [ "$GROUP_STRATEGY" = "posix_group" ]; then
-     echo "${RED}WARNING: Your LDAP uses POSIX groups (memberUid).${RESET}"
-     echo "The current version of NS116 DOES NOT support this attribute by default."
-     echo "You will need to update the application code or request a feature to support 'memberUid' style groups."
+     echo "${GREEN}Your LDAP uses POSIX groups (memberUid).${RESET}"
+     echo "We have added the 'group_filter' parameter to support this configuration."
 fi
 echo ""

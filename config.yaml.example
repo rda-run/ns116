@@ -30,6 +30,10 @@ hosted_zones: []
 #  username_attr: "uid"
 #  starttls: false
 #  skip_verify: false
+#  # Optional: Filter to find groups. %s = User DN, %u = User Login (UID)
+#  # Default (Standard LDAP): (|(member=%s)(uniqueMember=%s))
+#  # POSIX Groups (memberUid): (&(objectClass=posixGroup)(memberUid=%u))
+#  group_filter: ""
 #  group_mapping:
 #    # Users in 'mathematicians' get admin access (e.g. riemann, gauss)
 #    admin: "ou=mathematicians,dc=example,dc=com"

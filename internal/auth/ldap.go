@@ -67,13 +67,24 @@ func (lc *LDAPClient) Authenticate(username, password string) (*LDAPResult, erro
 
 	groups := entry.GetAttributeValues("memberOf")
 	if len(groups) == 0 {
-		// Fallback: search for groups where the user is a member (e.g. OpenLDAP)
-		// We search for objects that have member or uniqueMember attribute set to userDN
-		groupFilter := fmt.Sprintf("(|(member=%s)(uniqueMember=%s))", ldap.EscapeFilter(userDN), ldap.EscapeFilter(userDN))
+		// Fallback: search for groups where the user is a member
+		// We support custom filters for POSIX groups (memberUid=%u) or standard groups (member=%s)
+
+		filterTmpl := lc.cfg.GroupFilter
+		if filterTmpl == "" {
+			filterTmpl = "(|(member=%s)(uniqueMember=%s))"
+		}
+
+		// Perform substitutions
+		// %s -> User DN
+		// %u -> User Login (UID/sAMAccountName)
+		finalFilter := strings.ReplaceAll(filterTmpl, "%s", ldap.EscapeFilter(userDN))
+		finalFilter = strings.ReplaceAll(finalFilter, "%u", ldap.EscapeFilter(entry.GetAttributeValue(lc.cfg.UsernameAttr)))
+
 		groupSearch := ldap.NewSearchRequest(
 			lc.cfg.BaseDN,
 			ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-			groupFilter,
+			finalFilter,
 			[]string{"dn"},
 			nil,
 		)

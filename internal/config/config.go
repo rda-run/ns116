@@ -40,6 +40,7 @@ type LDAPConfig struct {
 	EmailAttr    string            `yaml:"email_attr"`
 	StartTLS     bool              `yaml:"starttls"`
 	SkipVerify   bool              `yaml:"skip_verify"`
+	GroupFilter  string            `yaml:"group_filter"` // Optional filter to find groups. Defaults to (|(member=%s)(uniqueMember=%s))
 	GroupMapping map[string]string `yaml:"group_mapping"`
 }
 

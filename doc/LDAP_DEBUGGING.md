@@ -20,8 +20,9 @@ The application uses two strategies to find groups, in this order:
 1. **`memberOf` Attribute:** Checks if the user object has `memberOf` attributes
    containing the group DNs. (Common in Active Directory).
 2. **Reverse Group Search:** If no `memberOf` is found, it searches the LDAP
-   directory for Group objects where the `member` or `uniqueMember` attribute
-   equals the User's DN. (Common in OpenLDAP).
+   directory for Group objects.
+   - By default, it looks for groups where `member` or `uniqueMember` equals the **User's DN** (Standard LDAP).
+   - You can configure the `group_filter` to support **POSIX groups**, searching for `memberUid` equals the **User's Login/UID** (RFC 2307).
 
 If both strategies fail to return a group that matches your `config.yaml`
 mapping, access is denied.
@@ -86,6 +87,25 @@ ldapsearch -x -H "$LDAP_URL" \
   CN=Ns116-Admins,OU=Groups,DC=example,DC=com`), then the application *can* see
   the membership.
 - **Action:** Copy that group DN into your `config.yaml`.
+
+### Step C: Verify POSIX Group Membership (memberUid)
+
+If your LDAP uses `posixGroup` with `memberUid`, the standard search above will fail. Try this command:
+
+```bash
+USER_UID="jdoe" # The login name, NOT the DN
+GROUP_BASE="OU=Groups,DC=example,DC=com"
+
+ldapsearch -x -H "$LDAP_URL" \
+  -D "$BIND_DN" \
+  -w "$BIND_PASS" \
+  -b "$GROUP_BASE" \
+  "(&(objectClass=posixGroup)(memberUid=$USER_UID))" \
+  dn
+```
+
+- **If this works:** You need to configure `group_filter` in your `config.yaml`.
+- **Action:** Set `group_filter: "(&(objectClass=posixGroup)(memberUid=%u))"`
 
 ## 3. Configuring `config.yaml` Correctly
 
