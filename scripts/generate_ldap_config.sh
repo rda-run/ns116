@@ -51,11 +51,12 @@ echo "Analyzing user '$TEST_USER'..."
 # Try to discover the login attribute
 LOGIN_ATTR=""
 USER_DN=""
+USER_UID=""
 USER_EMAIL_ATTR="mail" # Default
 
 # Try sAMAccountName (Active Directory)
 if [ -z "$LOGIN_ATTR" ]; then
-    OUTPUT=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(sAMAccountName=$TEST_USER)" dn mail 2>/dev/null)
+    OUTPUT=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(sAMAccountName=$TEST_USER)" dn sAMAccountName mail 2>/dev/null)
     if echo "$OUTPUT" | grep -q "^dn:"; then
         LOGIN_ATTR="sAMAccountName"
         USER_FILTER="(sAMAccountName=%s)"
@@ -65,7 +66,7 @@ fi
 
 # Try uid (OpenLDAP / Standard)
 if [ -z "$LOGIN_ATTR" ]; then
-    OUTPUT=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(uid=$TEST_USER)" dn mail 2>/dev/null)
+    OUTPUT=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(uid=$TEST_USER)" dn uid mail 2>/dev/null)
     if echo "$OUTPUT" | grep -q "^dn:"; then
         LOGIN_ATTR="uid"
         USER_FILTER="(uid=%s)"
@@ -75,7 +76,7 @@ fi
 
 # Try cn (Generic)
 if [ -z "$LOGIN_ATTR" ]; then
-    OUTPUT=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(cn=$TEST_USER)" dn mail 2>/dev/null)
+    OUTPUT=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(cn=$TEST_USER)" dn cn mail 2>/dev/null)
     if echo "$OUTPUT" | grep -q "^dn:"; then
         LOGIN_ATTR="cn"
         USER_FILTER="(cn=%s)"
@@ -89,9 +90,11 @@ if [ -z "$LOGIN_ATTR" ]; then
     exit 1
 fi
 
-# Extract User DN
+# Extract User DN and UID (plain username)
 USER_DN=$(echo "$OUTPUT" | grep "^dn:" | head -n1 | sed 's/^dn: //')
+USER_UID=$(echo "$OUTPUT" | grep "^$LOGIN_ATTR:" | head -n1 | sed "s/^$LOGIN_ATTR: //")
 echo "  User DN: $USER_DN"
+echo "  User Login: $USER_UID"
 
 # 4. Analyze Groups
 echo ""
@@ -108,35 +111,48 @@ if [ ! -z "$MEMBEROF" ]; then
     echo "${GREEN}✔ 'memberOf' attribute found on user.${RESET}"
     GROUP_STRATEGY="memberOf"
     
-    # List found groups
     echo "Detected groups:"
     echo "$MEMBEROF" | sed 's/^memberOf: //' | while read group; do
         echo " - $group"
     done
-    
-    # Take the first group for config example
     ADMIN_GROUP_DN=$(echo "$MEMBEROF" | head -n1 | sed 's/^memberOf: //')
+
 else
-    echo "  'memberOf' not found or empty. Trying reverse search..."
+    echo "  'memberOf' not found. Trying reverse search..."
     
-    # Strategy B: Reverse Search (OpenLDAP - groupOfNames/groupOfUniqueNames)
-    # Search for groups that have this user as a member
+    # Strategy B: Reverse Search (Standard DN based: groupOfNames/groupOfUniqueNames)
+    echo "  Checking for standard DN-based groups (member/uniqueMember)..."
     GROUP_SEARCH=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(|(member=$USER_DN)(uniqueMember=$USER_DN))" dn 2>/dev/null | grep "^dn:")
     
     if [ ! -z "$GROUP_SEARCH" ]; then
          echo "${GREEN}✔ Groups found via reverse search (member/uniqueMember).${RESET}"
-         GROUP_STRATEGY="reverse_search"
+         GROUP_STRATEGY="reverse_search_dn"
          
          echo "Detected groups:"
          echo "$GROUP_SEARCH" | sed 's/^dn: //' | while read group; do
             echo " - $group"
          done
-         
          ADMIN_GROUP_DN=$(echo "$GROUP_SEARCH" | head -n1 | sed 's/^dn: //')
+
     else
-        echo "${RED}⚠ No groups found for this user.${RESET}"
-        echo "You will need to manually fill in the Group DN in the configuration."
-        ADMIN_GROUP_DN="CN=DNS-Admins,OU=Groups,$BASE_DN"
+        # Strategy C: POSIX Groups (memberUid with plain username)
+        echo "  Checking for POSIX groups (memberUid)..."
+        GROUP_SEARCH_POSIX=$(ldapsearch -x -H "$LDAP_URL" -D "$BIND_DN" -w "$BIND_PASS" -b "$BASE_DN" "(&(objectClass=posixGroup)(memberUid=$USER_UID))" dn 2>/dev/null | grep "^dn:")
+
+        if [ ! -z "$GROUP_SEARCH_POSIX" ]; then
+             echo "${GREEN}✔ POSIX Groups found (memberUid).${RESET}"
+             GROUP_STRATEGY="posix_group"
+             
+             echo "Detected groups:"
+             echo "$GROUP_SEARCH_POSIX" | sed 's/^dn: //' | while read group; do
+                echo " - $group"
+             done
+             ADMIN_GROUP_DN=$(echo "$GROUP_SEARCH_POSIX" | head -n1 | sed 's/^dn: //')
+        else
+            echo "${RED}⚠ No groups found for this user.${RESET}"
+            echo "You will need to manually fill in the Group DN in the configuration."
+            ADMIN_GROUP_DN="CN=DNS-Admins,OU=Groups,$BASE_DN"
+        fi
     fi
 fi
 
@@ -147,6 +163,7 @@ echo "Copy and paste the block below into your config.yaml file:"
 echo ""
 echo "ldap:"
 echo "  enabled: true"
+# ... standard config structure ...
 echo "  url: \"$LDAP_URL\""
 echo "  bind_dn: \"$BIND_DN\""
 echo "  bind_password: \"$BIND_PASS\""
@@ -160,9 +177,14 @@ echo "    admin: \"$ADMIN_GROUP_DN\""
 echo "    editor: \"CN=DNS-Editors,OU=Groups,$BASE_DN\""
 
 echo ""
-if [ "$GROUP_STRATEGY" = "reverse_search" ]; then
-    echo "${YELLOW}Note: Since your LDAP uses reverse search (OpenLDAP), NS116 will automatically detect groups.${RESET}"
+echo "${YELLOW}=== IMPORTANT NOTES ===${RESET}"
+if [ "$GROUP_STRATEGY" = "reverse_search_dn" ]; then
+    echo "Your LDAP uses standard groups (member/uniqueMember). NS116 supports this natively."
 elif [ "$GROUP_STRATEGY" = "memberOf" ]; then
-     echo "${YELLOW}Note: NS116 will use the memberOf attribute to check groups.${RESET}"
+     echo "Your LDAP supports memberOf. NS116 supports this natively."
+elif [ "$GROUP_STRATEGY" = "posix_group" ]; then
+     echo "${RED}WARNING: Your LDAP uses POSIX groups (memberUid).${RESET}"
+     echo "The current version of NS116 DOES NOT support this attribute by default."
+     echo "You will need to update the application code or request a feature to support 'memberUid' style groups."
 fi
 echo ""
