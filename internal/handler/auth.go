@@ -8,6 +8,7 @@ import (
 	"ns116/internal/auth"
 	"ns116/internal/database"
 	"ns116/internal/model"
+	"ns116/internal/util"
 )
 
 type AuthHandler struct {
@@ -93,7 +94,7 @@ func (h *AuthHandler) LoginSubmit(w http.ResponseWriter, r *http.Request) {
 		Username:  user.Username,
 		Action:    "login",
 		Detail:    fmt.Sprintf("auth=%s", authMethod),
-		IPAddress: r.RemoteAddr,
+		IPAddress: util.GetClientIP(r),
 	})
 
 	http.Redirect(w, r, "/zones", http.StatusSeeOther)
@@ -108,7 +109,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		_ = h.db.LogAudit(model.AuditEntry{
 			Username:  username,
 			Action:    "logout",
-			IPAddress: r.RemoteAddr,
+			IPAddress: util.GetClientIP(r),
 		})
 	}
 

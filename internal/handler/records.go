@@ -12,6 +12,7 @@ import (
 	"ns116/internal/database"
 	"ns116/internal/model"
 	"ns116/internal/service"
+	"ns116/internal/util"
 )
 
 type RecordHandler struct {
@@ -122,7 +123,7 @@ func (h *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
 		RecordName: req.Name,
 		RecordType: req.Type,
 		Detail:     fmt.Sprintf("values=%v ttl=%d", req.Values, req.TTL),
-		IPAddress:  r.RemoteAddr,
+		IPAddress:  util.GetClientIP(r),
 	})
 
 	http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
@@ -166,7 +167,7 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 			RecordName: upsertReq.Name,
 			RecordType: upsertReq.Type,
 			Detail:     fmt.Sprintf("upsert ttl=%d values=%v", upsertReq.TTL, upsertReq.Values),
-			IPAddress:  r.RemoteAddr,
+			IPAddress:  util.GetClientIP(r),
 		})
 
 		http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
@@ -208,7 +209,7 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 		RecordName: createReq.Name,
 		RecordType: createReq.Type,
 		Detail:     fmt.Sprintf("rename from %s used 2-step update", deleteReq.Name),
-		IPAddress:  r.RemoteAddr,
+		IPAddress:  util.GetClientIP(r),
 	})
 
 	http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
@@ -238,7 +239,7 @@ func (h *RecordHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		ZoneID:     zoneID,
 		RecordName: req.Name,
 		RecordType: req.Type,
-		IPAddress:  r.RemoteAddr,
+		IPAddress:  util.GetClientIP(r),
 	})
 
 	http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
