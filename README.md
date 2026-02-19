@@ -85,9 +85,21 @@ ldap:
   user_filter: "(sAMAccountName=%s)"     # or "(uid=%s)"
   username_attr: "sAMAccountName"        # or "uid"
   email_attr: "mail"
+  # Optional: Custom group filter (e.g. for POSIX groups)
+  # Default: (|(member=%s)(uniqueMember=%s))
+  # For memberUid: (&(objectClass=posixGroup)(memberUid=%u))
+  group_filter: ""
   group_mapping:
     admin: "CN=DNS-Admins,OU=Groups,DC=example,DC=com"
     editor: "CN=DNS-Editors,OU=Groups,DC=example,DC=com"
+```
+
+**Auto-Configuration Tool:**
+
+We provide a helper script to automatically detect your LDAP server type (Active Directory, OpenLDAP, or POSIX) and generate the correct configuration for you.
+
+```bash
+./scripts/generate_ldap_config.sh
 ```
 
 **Notes:**
