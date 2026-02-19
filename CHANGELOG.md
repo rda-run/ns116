@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **UI:** Visual feedback (loading spinners) on Record Create, Edit, and Delete actions to indicate processing state.
+
+### Fixed
+
+- **Audit:** Fixed incorrect client IP logging when running behind a reverse proxy (e.g. Ingress Nginx) by inspecting `X-Forwarded-For` and `X-Real-IP` headers.
+
 ## [1.0.1] - 2026-02-19
 
 ### Added
