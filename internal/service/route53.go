@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -132,20 +133,20 @@ func (s *DNSService) ListRecords(ctx context.Context, zoneID string) ([]model.DN
 
 		for _, rrs := range result.ResourceRecordSets {
 			rec := model.DNSRecord{
-				Name: *rrs.Name,
+				Name: unescapeRoute53(*rrs.Name),
 				Type: string(rrs.Type),
 			}
 
 			if rrs.AliasTarget != nil {
 				rec.IsAlias = true
-				rec.AliasTarget = *rrs.AliasTarget.DNSName
+				rec.AliasTarget = unescapeRoute53(*rrs.AliasTarget.DNSName)
 				rec.AliasZoneID = *rrs.AliasTarget.HostedZoneId
 			} else {
 				if rrs.TTL != nil {
 					rec.TTL = *rrs.TTL
 				}
 				for _, r := range rrs.ResourceRecords {
-					rec.Values = append(rec.Values, *r.Value)
+					rec.Values = append(rec.Values, unescapeRoute53(*r.Value))
 				}
 			}
 
@@ -227,4 +228,22 @@ func safeComment(cfg *types.HostedZoneConfig) string {
 		return *cfg.Comment
 	}
 	return ""
+}
+
+func unescapeRoute53(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+	var out strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' && i+3 < len(s) {
+			if v, err := strconv.ParseInt(s[i+1:i+4], 8, 32); err == nil {
+				out.WriteByte(byte(v))
+				i += 3
+				continue
+			}
+		}
+		out.WriteByte(s[i])
+	}
+	return out.String()
 }
