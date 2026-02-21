@@ -10,11 +10,25 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **UI:** Visual feedback (loading spinners) on Record Create, Edit, and Delete actions to indicate processing state.
+- **UI:** Visual feedback (loading spinners) on Record Create, Edit, and Delete
+  actions to indicate processing state.
+
+### Changed
+
+- **Audit:** Overhauled audit log interface and backend to explicitly denote the
+  targeted Zone Name automatically natively using cache joining.
+- **Audit:** Audit entries now exhibit deep, granular `before -> after`
+  comparisons precisely showcasing the changed payloads in DNS edits (instead of
+  raw AWS outputs), and securely retain properties on deletions.
 
 ### Fixed
 
-- **Audit:** Fixed incorrect client IP logging when running behind a reverse proxy (e.g. Ingress Nginx) by inspecting `X-Forwarded-For` and `X-Real-IP` headers.
+- **Core:** Implement octal unescaping for values coming from Route53, ensuring
+  special symbols and wildcard prefixes (`*`) display their correct ASCII
+  counterparts and not raw byte strings (e.g., `\052`).
+- **Audit:** Fixed incorrect client IP logging when running behind a reverse
+  proxy (e.g. Ingress Nginx) by inspecting `X-Forwarded-For` and `X-Real-IP`
+  headers.
 
 ## [1.0.1] - 2026-02-19
 
