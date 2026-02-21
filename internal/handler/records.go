@@ -122,7 +122,7 @@ func (h *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ZoneID:     zoneID,
 		RecordName: req.Name,
 		RecordType: req.Type,
-		Detail:     fmt.Sprintf("values=%v ttl=%d", req.Values, req.TTL),
+		Detail:     fmt.Sprintf("values=[%s] ttl=%d", strings.Join(req.Values, ", "), req.TTL),
 		IPAddress:  util.GetClientIP(r),
 	})
 
@@ -145,6 +145,25 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 	newName := qualifyName(r.FormValue("name"), zoneDomain)
 	newType := r.FormValue("type")
 
+	var diffs []string
+	if originalName != newName {
+		diffs = append(diffs, fmt.Sprintf("name: %s -> %s", originalName, newName))
+	}
+	if originalType != newType {
+		diffs = append(diffs, fmt.Sprintf("type: %s -> %s", originalType, newType))
+	}
+	oldTTLStr := r.FormValue("original_ttl")
+	newTTLStr := r.FormValue("ttl")
+	if oldTTLStr != newTTLStr {
+		diffs = append(diffs, fmt.Sprintf("ttl: %s -> %s", oldTTLStr, newTTLStr))
+	}
+	oldVals := strings.Join(r.Form["original_value"], ", ")
+	newVals := strings.Join(r.Form["value"], ", ")
+	if oldVals != newVals {
+		diffs = append(diffs, fmt.Sprintf("values: [%s] -> [%s]", oldVals, newVals))
+	}
+	detailStr := strings.Join(diffs, "; ")
+
 	// If Name and Type are unchanged, use UPSERT (atomic update)
 	if originalName == newName && originalType == newType {
 		upsertReq := model.RecordChangeRequest{
@@ -166,7 +185,7 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 			ZoneID:     zoneID,
 			RecordName: upsertReq.Name,
 			RecordType: upsertReq.Type,
-			Detail:     fmt.Sprintf("upsert ttl=%d values=%v", upsertReq.TTL, upsertReq.Values),
+			Detail:     detailStr,
 			IPAddress:  util.GetClientIP(r),
 		})
 
@@ -208,7 +227,7 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 		ZoneID:     zoneID,
 		RecordName: createReq.Name,
 		RecordType: createReq.Type,
-		Detail:     fmt.Sprintf("rename from %s used 2-step update", deleteReq.Name),
+		Detail:     detailStr,
 		IPAddress:  util.GetClientIP(r),
 	})
 
@@ -239,6 +258,7 @@ func (h *RecordHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		ZoneID:     zoneID,
 		RecordName: req.Name,
 		RecordType: req.Type,
+		Detail:     fmt.Sprintf("ttl=%d values=[%s]", req.TTL, strings.Join(req.Values, ", ")),
 		IPAddress:  util.GetClientIP(r),
 	})
 

@@ -51,6 +51,7 @@ type AuditEntry struct {
 	Username   string
 	Action     string
 	ZoneID     string
+	ZoneName   string
 	RecordName string
 	RecordType string
 	Detail     string
