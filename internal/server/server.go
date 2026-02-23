@@ -13,6 +13,7 @@ import (
 	"ns116/internal/handler"
 	"ns116/internal/service"
 	"ns116/web"
+	"strings"
 	"time"
 )
 
@@ -51,6 +52,16 @@ func Start(cfg *config.Config, version string) error {
 		"subtract":   func(a, b int) int { return a - b },
 		"version":    func() string { return version },
 		"formatDate": func(t time.Time) string { return t.Format("2006-01-02 15:04:05") },
+		"shortName": func(fqdn, zoneDomain string) string {
+			suffix := "." + zoneDomain
+			if fqdn == zoneDomain {
+				return "@"
+			}
+			if strings.HasSuffix(fqdn, suffix) {
+				return strings.TrimSuffix(fqdn, suffix)
+			}
+			return fqdn
+		},
 	}
 
 	loginTmpl := mustParseTemplates(tmplFS, funcMap, "templates/login.html")
