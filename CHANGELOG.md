@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **UI:** The Records list now displays short/abbreviated subdomain names by default (omitting the repetitive zone domain) in the Name column. The full FQDN remains accessible via mouse tooltip (hovering). Apex records are represented uniformly as `@`.
+
 ## [1.0.2] - 2026-02-21
 
 ### Added
