@@ -70,3 +70,16 @@ type CachedRecord struct {
 	AliasZoneID string
 	CachedAt    time.Time
 }
+
+type RecordRef struct {
+	ZoneID    string
+	ZoneLabel string
+	Name      string
+	Type      string
+}
+
+type DuplicateGroup struct {
+	Value     string
+	ValueHash string
+	Records   []RecordRef
+}

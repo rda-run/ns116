@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -45,21 +46,6 @@ func (h *RecordHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	records, err := h.r53.ListRecords(r.Context(), zoneID)
-	if err != nil {
-		h.tmpl.ExecuteTemplate(w, "layout", map[string]interface{}{
-			"Title":      zone.Name,
-			"Username":   username,
-			"CSRFToken":  csrfToken,
-			"Role":       roleOf(user),
-			"ZoneID":     zoneID,
-			"ZoneName":   zone.Name,
-			"ZoneDomain": zone.Name,
-			"Error":      "Failed to load records: " + err.Error(),
-		})
-		return
-	}
-
 	zoneName := zone.Name
 	if zone.Label != "" {
 		zoneName = zone.Label
@@ -73,9 +59,27 @@ func (h *RecordHandler) List(w http.ResponseWriter, r *http.Request) {
 		"ZoneID":     zoneID,
 		"ZoneName":   zoneName,
 		"ZoneDomain": zone.Name,
-		"Records":    records,
 		"Flash":      r.URL.Query().Get("msg"),
 	})
+}
+
+func (h *RecordHandler) Data(w http.ResponseWriter, r *http.Request) {
+	zoneID := r.PathValue("zoneID")
+
+	records, err := h.r53.ListRecords(r.Context(), zoneID)
+	if err != nil {
+		h.writeJSONError(w, http.StatusInternalServerError, "Failed to load records: "+err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(records)
+}
+
+func (h *RecordHandler) writeJSONError(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
 func qualifyName(name, zoneDomain string) string {

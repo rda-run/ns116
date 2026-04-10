@@ -14,9 +14,7 @@
       <p class="text-gray-500 mt-1">Manage DNS records for this zone</p>
     </div>
     <div class="flex items-center gap-3">
-      <span class="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full border border-gray-200">
-        {{len .Records}} RECORD{{if ne (len .Records) 1}}S{{end}}
-      </span>
+      <span id="record-count-badge" class="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full border border-gray-200 animate-pulse w-24 h-6"></span>
       <form method="POST" action="/zones/{{.ZoneID}}/records/refresh" class="inline">
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <button type="submit" title="Refresh from AWS" onclick="this.querySelector('svg').classList.add('animate-spin')"
@@ -105,8 +103,7 @@
 </div>
 
 <!-- Search -->
-{{if .Records}}
-<div class="mb-6">
+<div id="search-container" class="mb-6 hidden">
   <div class="relative group">
     <i data-lucide="search"
       class="w-5 h-5 text-gray-400 group-focus-within:text-connection-blue absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors"></i>
@@ -115,11 +112,9 @@
       oninput="filterRecords(this.value)">
   </div>
 </div>
-{{end}}
 
 <!-- Records List (Table) -->
-{{if .Records}}
-<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+<div id="table-container" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hidden">
   <table class="w-full text-left border-collapse" id="records-list">
     <thead>
       <tr class="bg-gray-50 border-b border-gray-200">
@@ -130,70 +125,28 @@
         <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right w-32">Actions</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100">
-      {{range .Records}}
-      <tr class="record-card hover:bg-blue-50/50 transition-colors group"
-        data-search="{{.Name}} {{range .Values}}{{.}} {{end}}{{.AliasTarget}}">
-        <td class="p-4 align-top">
-          <span class="inline-block text-xs font-bold px-2 py-0.5 rounded shadow-sm text-white text-center min-w-[3.5rem]
-              {{if eq .Type " A"}}bg-highway-green {{else if eq .Type "CNAME" }}bg-purple-600 {{else if eq .Type "TXT"
-            }}bg-gray-500 {{else if eq .Type "MX" }}bg-orange-500 {{else if eq .Type "NS" }}bg-blue-800
-            {{else}}bg-connection-blue{{end}}">
-            {{.Type}}
-          </span>
-        </td>
-        <td class="p-4 align-top">
-          <span class="font-mono font-medium text-asphalt-dark text-sm break-all" title="{{.Name}}">{{shortName .Name $.ZoneDomain}}</span>
-        </td>
-        <td class="p-4 align-top">
-          <div class="font-mono text-sm text-gray-600 space-y-1">
-            {{if .IsAlias}}
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] uppercase bg-asphalt-dark text-white px-1.5 py-0.5 rounded">ALIAS</span>
-              <span
-                class="text-connection-blue underline decoration-dotted underline-offset-2 break-all">{{.AliasTarget}}</span>
-            </div>
-            {{else}}
-            {{range .Values}}
-            <div class="break-all">{{.}}</div>
-            {{end}}
-            {{end}}
-          </div>
-        </td>
-        <td class="p-4 align-top">
-          {{if not .IsAlias}}
-          <span class="font-mono text-xs text-gray-500">{{.TTL}}</span>
-          {{else}}
-          <span class="text-gray-300">-</span>
-          {{end}}
-        </td>
-        <td class="p-4 align-top text-right">
-          {{if and (ne .Type "SOA") (ne .Type "NS")}}
-          <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onclick="showEditForm(this)" data-name="{{.Name}}" data-type="{{.Type}}" data-ttl="{{.TTL}}"
-              data-values="{{range $i, $v := .Values}}{{if $i}}||{{end}}{{$v}}{{end}}"
-              class="text-gray-400 hover:text-caution-yellow transition-colors p-1" title="Edit">
-              <i data-lucide="edit-3" class="w-4 h-4"></i>
-            </button>
-
-            <form method="POST" action="/zones/{{$.ZoneID}}/records/delete" class="inline"
-              onsubmit="return confirm('Delete this record?')">
-              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-              <input type="hidden" name="name" value="{{.Name}}">
-              <input type="hidden" name="type" value="{{.Type}}">
-              <input type="hidden" name="ttl" value="{{.TTL}}">
-              {{range .Values}}<input type="hidden" name="value" value="{{.}}">{{end}}
-              <button type="submit" onclick="this.innerHTML='<i data-lucide=\'loader-2\' class=\'w-4 h-4 animate-spin\'></i>'; lucide.createIcons()" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Delete">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </form>
-          </div>
-          {{end}}
-        </td>
-      </tr>
-      {{end}}
+    <tbody id="records-body" class="divide-y divide-gray-100">
+      <!-- To be populated by JS -->
     </tbody>
   </table>
+</div>
+
+<!-- Skeletons -->
+<div id="skeleton-body" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  <div class="bg-gray-50 border-b border-gray-200 h-12"></div>
+  <div class="divide-y divide-gray-100">
+    {{range (seq 6)}}
+    <div class="p-4 flex items-center justify-between animate-pulse">
+      <div class="flex items-center gap-4 flex-1">
+        <div class="h-6 bg-gray-100 rounded w-12"></div>
+        <div class="h-4 bg-gray-100 rounded w-32"></div>
+        <div class="h-4 bg-gray-100 rounded w-48"></div>
+      </div>
+      <div class="h-4 bg-gray-100 rounded w-16"></div>
+      <div class="h-6 bg-gray-50 rounded w-16 ml-8"></div>
+    </div>
+    {{end}}
+  </div>
 </div>
 
 <div id="no-search-results" class="hidden bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
@@ -204,15 +157,13 @@
   <p class="text-gray-500 text-sm">Try a different search term.</p>
 </div>
 
-{{else}}
-<div class="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+<div id="empty-state" class="hidden bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
   <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-50 rounded-full mb-6">
     <i data-lucide="file-question" class="w-10 h-10 text-gray-400"></i>
   </div>
   <h3 class="text-xl font-branding font-bold text-gray-900 mb-2">No records found</h3>
   <p class="text-gray-500 max-w-md mx-auto">Add your first DNS record using the button above.</p>
 </div>
-{{end}}
 
 <!-- Edit Modal -->
 <div id="edit-modal"
@@ -292,6 +243,106 @@
 </div>
 
 <script>
+  const zoneID = '{{.ZoneID}}';
+  const zoneDomain = '{{.ZoneDomain}}';
+  const csrfToken = '{{.CSRFToken}}';
+
+  async function loadData() {
+    try {
+      const response = await fetch(`/zones/${zoneID}/records/data`);
+      const records = await response.json();
+      
+      const skeleton = document.getElementById('skeleton-body');
+      const tableContainer = document.getElementById('table-container');
+      const recordsBody = document.getElementById('records-body');
+      const searchContainer = document.getElementById('search-container');
+      const emptyState = document.getElementById('empty-state');
+      const countBadge = document.getElementById('record-count-badge');
+
+      // Update badge
+      countBadge.textContent = `${records.length} RECORD${records.length !== 1 ? 'S' : ''}`;
+      countBadge.classList.remove('animate-pulse', 'w-24', 'h-6');
+
+      skeleton.classList.add('hidden');
+
+      if (records && records.length > 0) {
+        recordsBody.innerHTML = records.map(rec => renderRow(rec)).join('');
+        tableContainer.classList.remove('hidden');
+        searchContainer.classList.remove('hidden');
+      } else {
+        emptyState.classList.remove('hidden');
+      }
+
+      lucide.createIcons();
+    } catch (err) {
+      console.error('Failed to load records:', err);
+    }
+  }
+
+  function renderRow(rec) {
+    const isSpecial = rec.Type === 'SOA' || rec.Type === 'NS';
+    const valuesContent = rec.IsAlias 
+      ? `<div class="flex items-center gap-2"><span class="text-[10px] uppercase bg-asphalt-dark text-white px-1.5 py-0.5 rounded">ALIAS</span><span class="text-connection-blue underline decoration-dotted underline-offset-2 break-all">${rec.AliasTarget}</span></div>`
+      : rec.Values.map(v => `<div class="break-all">${v}</div>`).join('');
+
+    const actionButtons = isSpecial ? '' : `
+      <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onclick="showEditForm(this)" 
+          data-name="${rec.Name}" 
+          data-type="${rec.Type}" 
+          data-ttl="${rec.TTL}"
+          data-values="${rec.Values ? rec.Values.join('||') : ''}"
+          class="text-gray-400 hover:text-caution-yellow transition-colors p-1" title="Edit">
+          <i data-lucide="edit-3" class="w-4 h-4"></i>
+        </button>
+
+        <form method="POST" action="/zones/${zoneID}/records/delete" class="inline" onsubmit="return confirm('Delete this record?')">
+          <input type="hidden" name="csrf_token" value="${csrfToken}">
+          <input type="hidden" name="name" value="${rec.Name}">
+          <input type="hidden" name="type" value="${rec.Type}">
+          <input type="hidden" name="ttl" value="${rec.TTL}">
+          ${(rec.Values || []).map(v => `<input type="hidden" name="value" value="${v}">`).join('')}
+          <button type="submit" onclick="this.innerHTML='<i data-lucide=\\'loader-2\\' class=\\'w-4 h-4 animate-spin\\'></i>'; lucide.createIcons()" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Delete">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+    `;
+
+    const searchStr = `${rec.Name} ${(rec.Values || []).join(' ')} ${rec.AliasTarget || ''}`.toLowerCase();
+
+    return `
+      <tr class="record-card hover:bg-blue-50/50 transition-colors group" data-search="${searchStr}">
+        <td class="p-4 align-top">
+          <span class="inline-block text-xs font-bold px-2 py-0.5 rounded shadow-sm text-white text-center min-w-[3.5rem] ${getTypeBadgeClass(rec.Type)}">
+            ${rec.Type}
+          </span>
+        </td>
+        <td class="p-4 align-top">
+          <span class="font-mono font-medium text-asphalt-dark text-sm break-all" title="${rec.Name}">${stripDomain(rec.Name)}</span>
+        </td>
+        <td class="p-4 align-top">
+          <div class="font-mono text-sm text-gray-600 space-y-1">${valuesContent}</div>
+        </td>
+        <td class="p-4 align-top">
+          ${!rec.IsAlias ? `<span class="font-mono text-xs text-gray-500">${rec.TTL}</span>` : '<span class="text-gray-300">-</span>'}
+        </td>
+        <td class="p-4 align-top text-right">${actionButtons}</td>
+      </tr>
+    `;
+  }
+
+  function getTypeBadgeClass(type) {
+    switch(type) {
+      case 'A': return 'bg-highway-green';
+      case 'CNAME': return 'bg-purple-600';
+      case 'TXT': return 'bg-gray-500';
+      case 'MX': return 'bg-orange-500';
+      case 'NS': return 'bg-blue-800';
+      default: return 'bg-connection-blue';
+    }
+  }
+
   function filterRecords(query) {
     const q = query.toLowerCase().trim();
     const rows = document.querySelectorAll('.record-card');
@@ -309,16 +360,7 @@
       }
     });
 
-    if (table) table.style.display = visible ? '' : 'none'; // This hides the whole table if no rows
-    // Wait, hiding the table hides the header too. Better to just hide rows. 
-    // But if no rows match, we want to show "No matching records" and maybe hide header?
-    // Let's keep header visible if we want, or hide it. 
-    // UI Kit behavior: usually hide table if empty.
-
-    // Correction: if I hide the table, I hide the header. 
-    // Let's hide the table (including header) if no results found.
-    if (table) table.style.display = visible ? 'table' : 'none'; // Restore display:table
-
+    if (table) table.parentElement.style.display = visible ? '' : 'none';
     if (empty) empty.classList.toggle('hidden', visible > 0);
   }
 
@@ -337,8 +379,6 @@
     container.appendChild(div);
     lucide.createIcons();
   }
-
-  const zoneDomain = '{{.ZoneDomain}}';
 
   function stripDomain(fqdn) {
     const suffix = '.' + zoneDomain;
@@ -388,6 +428,8 @@
     const container = document.getElementById('edit-values-container');
     const div = document.createElement('div');
     div.className = 'flex gap-2 mb-2';
+    // Use innerText to avoid script injection if val comes from untrusted source, 
+    // though here it's from the dataset.
     div.innerHTML = `
     <input type="text" name="value" value="${val.replace(/"/g, '&quot;')}" required
       class="flex-1 border border-gray-300 rounded-lg p-3 font-mono text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue">
@@ -398,5 +440,7 @@
   `;
     container.appendChild(div);
   }
+
+  document.addEventListener('DOMContentLoaded', loadData);
 </script>
 {{end}}

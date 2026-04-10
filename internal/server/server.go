@@ -62,6 +62,13 @@ func Start(cfg *config.Config, version string) error {
 			}
 			return fqdn
 		},
+		"seq": func(n int) []int {
+			res := make([]int, n)
+			for i := 0; i < n; i++ {
+				res[i] = i
+			}
+			return res
+		},
 	}
 
 	loginTmpl := mustParseTemplates(tmplFS, funcMap, "templates/login.html")
@@ -70,6 +77,7 @@ func Start(cfg *config.Config, version string) error {
 	recordsTmpl := mustParseTemplates(tmplFS, funcMap, "templates/layout.html", "templates/records.html")
 	adminUsersTmpl := mustParseTemplates(tmplFS, funcMap, "templates/layout.html", "templates/admin_users.html")
 	adminAuditTmpl := mustParseTemplates(tmplFS, funcMap, "templates/layout.html", "templates/admin_audit.html")
+	duplicatesTmpl := mustParseTemplates(tmplFS, funcMap, "templates/layout.html", "templates/duplicates.html")
 
 	// Initialize LDAP client (nil if disabled)
 	var ldapClient *auth.LDAPClient
@@ -86,6 +94,7 @@ func Start(cfg *config.Config, version string) error {
 	recH := handler.NewRecordHandler(r53, sessionMgr, db, recordsTmpl)
 	adminH := handler.NewAdminHandler(db, sessionMgr, adminUsersTmpl)
 	adminAuditH := handler.NewAdminHandler(db, sessionMgr, adminAuditTmpl)
+	dupH := handler.NewDuplicateHandler(r53, sessionMgr, db, duplicatesTmpl)
 
 	mux := http.NewServeMux()
 
@@ -103,6 +112,7 @@ func Start(cfg *config.Config, version string) error {
 	appMux.HandleFunc("GET /zones", sessionMgr.RequireAuth(zoneH.List))
 	appMux.HandleFunc("POST /zones/refresh", sessionMgr.RequireAuth(sessionMgr.ValidateCSRF(zoneH.RefreshZones)))
 	appMux.HandleFunc("GET /zones/{zoneID}/records", sessionMgr.RequireAuth(recH.List))
+	appMux.HandleFunc("GET /zones/{zoneID}/records/data", sessionMgr.RequireAuth(recH.Data))
 	appMux.HandleFunc("POST /zones/{zoneID}/records/refresh", sessionMgr.RequireAuth(sessionMgr.ValidateCSRF(recH.RefreshRecords)))
 	appMux.HandleFunc("POST /zones/{zoneID}/records/create", sessionMgr.RequireAuth(sessionMgr.ValidateCSRF(recH.Create)))
 	appMux.HandleFunc("POST /zones/{zoneID}/records/edit", sessionMgr.RequireAuth(sessionMgr.ValidateCSRF(recH.Edit)))
@@ -112,6 +122,10 @@ func Start(cfg *config.Config, version string) error {
 	appMux.HandleFunc("POST /admin/users/create", sessionMgr.RequireAdmin(sessionMgr.ValidateCSRF(adminH.CreateUser)))
 	appMux.HandleFunc("POST /admin/users/delete", sessionMgr.RequireAdmin(sessionMgr.ValidateCSRF(adminH.DeleteUser)))
 	appMux.HandleFunc("GET /admin/audit", sessionMgr.RequireAdmin(adminAuditH.AuditLog))
+	appMux.HandleFunc("GET /admin/duplicates", sessionMgr.RequireAdmin(dupH.List))
+	appMux.HandleFunc("GET /admin/duplicates/data", sessionMgr.RequireAdmin(dupH.Data))
+	appMux.HandleFunc("POST /admin/duplicates/ignore", sessionMgr.RequireAdmin(sessionMgr.ValidateCSRF(dupH.Ignore)))
+	appMux.HandleFunc("POST /admin/duplicates/reset", sessionMgr.RequireAdmin(sessionMgr.ValidateCSRF(dupH.Reset)))
 
 	appMux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/zones", http.StatusSeeOther)

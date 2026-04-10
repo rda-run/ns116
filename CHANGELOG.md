@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-04-09
+
+### Added
+
+- **Admin:** New "Duplicates" section to detect and group DNS records with
+  identical values across all managed zones.
+- **Admin:** Ability to "Ignore" specific duplicate groups, persisting these
+  preferences in the database.
+- **Admin:** Global "Reset Ignores" feature to clear all ignored duplicates.
+- **Core:** Implemented asynchronous data loading pattern for both Duplicates
+  and Records pages, enabling instant initial page loads.
+- **UI:** Added Skeleton Loaders (pulsing placeholders) to provide visual
+  feedback during background data fetching.
+- **Audit:** Actions for ignoring and resetting duplicates are now automatically
+  logged in the Audit Log.
+
+### Fixed
+
+- **Templates:** Added `seq` helper function to the global template `FuncMap` to
+  prevent parsing errors when rendering repetitive UI elements like skeleton
+  rows.
+
 ## [1.0.3] - 2026-02-23
 
 ### Changed
