@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-15
+
+### Added
+
+- **Auth/OIDC:** Added OpenID Connect authentication with support for multiple
+  providers, callback handling, and automatic user provisioning flow.
+- **UI/Theming:** Full light/dark theme system with `auto` mode support based on
+  OS preference (`prefers-color-scheme`) and cookie-backed persistence via
+  `ns116_theme_mode`.
+- **UI/Header:** New theme switcher in the main header cycling through
+  `Auto -> Claro -> Escuro -> Auto` with accessible focus styles and live
+  theme re-application.
+
 ## [1.1.1] - 2026-04-09
 
 ### Added
