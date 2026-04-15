@@ -2,17 +2,17 @@
 <div class="mb-6 flex justify-between items-center">
   <div>
     <h2
-      class="font-branding text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600">
+      class="font-branding text-2xl font-bold text-text-base">
       Audit Log</h2>
-    <p class="font-mono text-xs text-gray-500 uppercase tracking-widest mt-1">System activity records</p>
+    <p class="font-mono text-xs text-text-muted uppercase tracking-widest mt-1">System activity records</p>
   </div>
 </div>
 
-<div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+<div class="bg-surface rounded-xl shadow-lg border border-border-subtle overflow-hidden">
   <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse table-auto whitespace-nowrap">
       <thead>
-        <tr class="bg-gray-50/50 border-b border-gray-100 text-xs font-mono uppercase text-gray-500 tracking-wider">
+        <tr class="bg-surface-subtle border-b border-border-subtle text-xs font-mono uppercase text-text-muted tracking-wider">
           <th class="p-4 font-semibold w-24">When</th>
           <th class="p-4 font-semibold w-32">User</th>
           <th class="p-4 font-semibold w-32">Action</th>
@@ -21,46 +21,46 @@
           <th class="p-4 font-semibold w-32 text-right">IP Addr</th>
         </tr>
       </thead>
-      <tbody class="text-sm divide-y divide-gray-50">
+      <tbody class="text-sm divide-y divide-border-subtle">
         {{range .Entries}}
-        <tr class="group hover:bg-yellow-50/50 transition-colors">
-          <td class="p-4 text-xs font-mono text-gray-500 whitespace-nowrap">
+        <tr class="group hover:bg-surface-subtle transition-colors">
+          <td class="p-4 text-xs font-mono text-text-muted whitespace-nowrap">
             {{formatDate .CreatedAt}}
           </td>
           <td class="p-4">
-            <div class="font-bold text-gray-900">{{.Username}}</div>
+            <div class="font-bold text-text-base">{{.Username}}</div>
           </td>
           <td class="p-4">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border
               {{if eq .Action " create"}}bg-green-50 text-green-700 border-green-200 {{else if eq .Action "delete"
               }}bg-red-50 text-red-700 border-red-200 {{else if eq .Action "update" }}bg-blue-50 text-blue-700
-              border-blue-200 {{else}}bg-gray-50 text-gray-600 border-gray-200{{end}}">
+              border-blue-200 {{else}}bg-surface-subtle text-text-muted border-border-subtle{{end}}">
               {{.Action}}
             </span>
           </td>
           <td class="p-4">
             {{if .ZoneName}}
-              <div class="text-xs font-bold text-gray-500 mb-0.5" title="{{.ZoneID}}">{{.ZoneName}}</div>
+              <div class="text-xs font-bold text-text-muted mb-0.5" title="{{.ZoneID}}">{{.ZoneName}}</div>
             {{end}}
             {{if .RecordName}}
-              <div class="font-mono text-sm text-gray-800 whitespace-normal break-all max-w-xs lg:max-w-sm" title="{{.RecordName}}">
+              <div class="font-mono text-sm text-text-base whitespace-normal break-all max-w-xs lg:max-w-sm" title="{{.RecordName}}">
                 {{.RecordName}} <span class="inline-block text-xs text-blue-600 bg-blue-50 px-1 ml-1 rounded">{{.RecordType}}</span>
               </div>
             {{end}}
           </td>
-          <td class="p-4 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-4xl truncate text-gray-600"
+          <td class="p-4 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-4xl truncate text-text-muted"
             title="{{.Detail}}">
             {{.Detail}}
           </td>
-          <td class="p-4 text-right font-mono text-xs text-gray-400 group-hover:text-gray-600">
+          <td class="p-4 text-right font-mono text-xs text-text-soft group-hover:text-text-muted">
             {{.IPAddress}}
           </td>
         </tr>
         {{else}}
-        <tr class="group hover:bg-yellow-50/50 transition-colors">
-          <td colspan="6" class="p-12 text-center text-gray-400">
+        <tr class="group hover:bg-surface-subtle transition-colors">
+          <td colspan="6" class="p-12 text-center text-text-soft">
             <div class="flex flex-col items-center gap-3">
-              <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-300">
+              <div class="w-12 h-12 bg-surface-subtle rounded-full flex items-center justify-center text-text-soft">
                 <i data-lucide="file-clock" class="w-6 h-6"></i>
               </div>
               <p>No audit records found.</p>
@@ -72,18 +72,18 @@
     </table>
   </div>
 
-  <div class="border-t border-gray-100 p-4 bg-gray-50/50 flex justify-between items-center text-xs text-gray-500">
+  <div class="border-t border-border-subtle p-4 bg-surface-subtle flex justify-between items-center text-xs text-text-muted">
     <div>
       Showing page {{.Page}} of {{.TotalPages}}
     </div>
     <div class="flex gap-2">
       {{if gt .Page 1}}
       <a href="?page={{subtract .Page 1}}"
-        class="px-3 py-1 bg-white border border-gray-200 rounded hover:border-gray-300 transition-colors">Previous</a>
+        class="px-3 py-1 bg-surface border border-border-subtle rounded hover:border-border-strong transition-colors">Previous</a>
       {{end}}
       {{if lt .Page .TotalPages}}
       <a href="?page={{add .Page 1}}"
-        class="px-3 py-1 bg-white border border-gray-200 rounded hover:border-gray-300 transition-colors">Next</a>
+        class="px-3 py-1 bg-surface border border-border-subtle rounded hover:border-border-strong transition-colors">Next</a>
       {{end}}
     </div>
   </div>

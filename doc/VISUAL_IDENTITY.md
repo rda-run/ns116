@@ -37,6 +37,15 @@ horizontally.
 * **Code & Technical Data:** JetBrains Mono or Fira Code
   * *Why:* Monospaced legibility is crucial for IP addresses and JSON records.
 
+#### Font Source
+
+Current implementation source:
+
+* Google Fonts (`https://fonts.googleapis.com`)
+  * `Overpass` (Headings & branding)
+  * `Inter` (Body text)
+  * `Fira Code` (Code/technical data)
+
 ### **2.3 Color Palette**
 
 The brand utilizes a **Functional Chromatic** system inspired by road signage.
@@ -49,6 +58,30 @@ The brand utilizes a **Functional Chromatic** system inspired by road signage.
 | **Asphalt Dark** | `#1A1A1A` | Primary text, headers, dark backgrounds. |
 | **Reflective White** | `#F8F9FA` | Main background, clean surfaces. |
 | **Road Gray** | `#E9ECEF` | Borders, dividers, disabled controls. |
+| **Elevated Dark** | `#262626` | Elevated dark surfaces (cards/modals on dark mode). |
+
+### **2.4 Theme Tokens (Light/Dark)**
+
+The app theme should be implemented with semantic tokens and switched via
+`data-theme="light|dark"`:
+
+* **Common Brand Tokens**
+  * `--highway-green: #009B3A`
+  * `--caution-yellow: #FFCC00`
+  * `--connection-blue: #007BFF`
+* **Light Theme**
+  * `--bg: #F8F9FA`
+  * `--surface: #FFFFFF`
+  * `--text: #1A1A1A`
+  * `--border: #E9ECEF`
+* **Dark Theme**
+  * `--bg: #1A1A1A`
+  * `--surface: #262626`
+  * `--text: #F8F9FA`
+  * `--border: #333333`
+
+Theme mode supports `auto`, `light`, and `dark`, where `auto` follows the OS
+preference via `prefers-color-scheme`.
 
 ## **3. Usage Guidelines**
 
