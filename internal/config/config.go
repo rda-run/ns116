@@ -44,12 +44,31 @@ type LDAPConfig struct {
 	GroupMapping map[string]string `yaml:"group_mapping"`
 }
 
+type OIDCProviderConfig struct {
+	Label           string              `yaml:"label"`
+	IssuerURL       string              `yaml:"issuer_url"`
+	ClientID        string              `yaml:"client_id"`
+	ClientSecret    string              `yaml:"client_secret"`
+	RedirectURL     string              `yaml:"redirect_url"`
+	Scopes          []string            `yaml:"scopes"`
+	UsernameClaim   string              `yaml:"username_claim"`
+	GroupsClaim     string              `yaml:"groups_claim"`
+	GroupMapping    map[string][]string `yaml:"group_mapping"`
+	ExtraAuthParams map[string]string   `yaml:"extra_auth_params"`
+}
+
+type OIDCConfig struct {
+	Enabled   bool                          `yaml:"enabled"`
+	Providers map[string]OIDCProviderConfig `yaml:"providers"`
+}
+
 type Config struct {
 	Server      ServerConfig      `yaml:"server"`
 	AWS         AWSConfig         `yaml:"aws"`
 	HostedZones []HostedZoneEntry `yaml:"hosted_zones"`
 	Database    DatabaseConfig    `yaml:"database"`
 	LDAP        LDAPConfig        `yaml:"ldap"`
+	OIDC        OIDCConfig        `yaml:"oidc"`
 }
 
 func Load(path string) (*Config, error) {
@@ -103,6 +122,40 @@ func Load(path string) (*Config, error) {
 			// However, this function just loads config. The logging responsibility
 			// is better placed in the server startup if needed, or we can fmt.Println.
 			fmt.Println("WARNING: LDAP is configured with ldap:// but StartTLS is disabled. Credentials will be sent in cleartext.")
+		}
+	}
+
+	if cfg.OIDC.Enabled {
+		if len(cfg.OIDC.Providers) == 0 {
+			return nil, fmt.Errorf("oidc.providers must define at least one provider when OIDC is enabled")
+		}
+		for name, p := range cfg.OIDC.Providers {
+			if strings.TrimSpace(name) == "" {
+				return nil, fmt.Errorf("oidc.providers contains an empty provider name")
+			}
+			if p.IssuerURL == "" {
+				return nil, fmt.Errorf("oidc.providers.%s.issuer_url is required", name)
+			}
+			if p.ClientID == "" {
+				return nil, fmt.Errorf("oidc.providers.%s.client_id is required", name)
+			}
+			if p.RedirectURL == "" {
+				return nil, fmt.Errorf("oidc.providers.%s.redirect_url is required", name)
+			}
+			if p.UsernameClaim == "" {
+				p.UsernameClaim = "preferred_username"
+			}
+			if p.GroupsClaim == "" {
+				p.GroupsClaim = "groups"
+			}
+			if len(p.Scopes) == 0 {
+				p.Scopes = []string{"openid", "profile", "email"}
+			}
+			if len(p.GroupMapping) == 0 {
+				return nil, fmt.Errorf("oidc.providers.%s.group_mapping must define at least one role (admin/editor)", name)
+			}
+			// Persist defaults back into cfg
+			cfg.OIDC.Providers[name] = p
 		}
 	}
 

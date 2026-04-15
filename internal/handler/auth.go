@@ -6,20 +6,22 @@ import (
 	"net/http"
 
 	"ns116/internal/auth"
+	"ns116/internal/auth/oidc"
 	"ns116/internal/database"
 	"ns116/internal/model"
 	"ns116/internal/util"
 )
 
 type AuthHandler struct {
-	db         *database.DB
-	sessionMgr *auth.SessionManager
-	ldap       *auth.LDAPClient
-	tmpl       *template.Template
+	db          *database.DB
+	sessionMgr  *auth.SessionManager
+	ldap        *auth.LDAPClient
+	oidcButtons []oidc.ProviderButton
+	tmpl        *template.Template
 }
 
-func NewAuthHandler(db *database.DB, sm *auth.SessionManager, ldap *auth.LDAPClient, tmpl *template.Template) *AuthHandler {
-	return &AuthHandler{db: db, sessionMgr: sm, ldap: ldap, tmpl: tmpl}
+func NewAuthHandler(db *database.DB, sm *auth.SessionManager, ldap *auth.LDAPClient, oidcButtons []oidc.ProviderButton, tmpl *template.Template) *AuthHandler {
+	return &AuthHandler{db: db, sessionMgr: sm, ldap: ldap, oidcButtons: oidcButtons, tmpl: tmpl}
 }
 
 func (h *AuthHandler) LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -27,8 +29,11 @@ func (h *AuthHandler) LoginPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/zones", http.StatusSeeOther)
 		return
 	}
+	errMsg := r.URL.Query().Get("error")
 	h.tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
 		"LDAPEnabled": h.ldap != nil,
+		"OIDCButtons": h.oidcButtons,
+		"Error":       errMsg,
 	})
 }
 

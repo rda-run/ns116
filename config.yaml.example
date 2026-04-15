@@ -20,6 +20,39 @@ hosted_zones: []
 #  - id: "****************"
 #    label: "internal.corp"
 
+#oidc:
+#  enabled: true
+#  providers:
+#    pocketid:
+#      label: "Pocket ID"
+#      issuer_url: "https://pocket-id.example.com"
+#      client_id: "ns116"
+#      # Pocket ID can be configured as a public client (no secret) or confidential client.
+#      # client_secret: "optional"
+#      redirect_url: "https://ns116.example.com/oidc/callback"
+#      scopes: ["openid", "profile", "email", "groups"]
+#      username_claim: "preferred_username"
+#      groups_claim: "groups"
+#      # Map OIDC groups to NS116 roles; login is denied if no group matches.
+#      group_mapping:
+#        admin: ["ns116-admins"]
+#        editor: ["ns116-editors"]
+#      username_claim: "preferred_username"
+#    google:
+#      label: "Google"
+#      issuer_url: "https://accounts.google.com"
+#      client_id: "YOUR_GOOGLE_CLIENT_ID"
+#      client_secret: "YOUR_GOOGLE_CLIENT_SECRET"
+#      redirect_url: "https://ns116.example.com/oidc/callback"
+#      scopes: ["openid", "profile", "email"]
+#      username_claim: "email"
+#      groups_claim: "groups"
+#      group_mapping:
+#        editor: ["ns116-editors"]
+#      extra_auth_params:
+#        access_type: "offline"
+#        prompt: "consent"
+
 #ldap:
 #  enabled: true
 #  url: "ldap://ldap.forumsys.com:389"

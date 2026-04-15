@@ -112,6 +112,49 @@ We provide a helper script to automatically detect your LDAP server type (Active
 3. **Auto-Provisioning**: LDAP users are automatically created in
     the local database on first login (password is not stored).
 
+### OpenID Connect (OIDC) Authentication
+
+Optional: Enable OIDC to authenticate users via an external identity provider (IdP).
+
+- **Login URL**: the login page will show one button per configured provider.
+- **Callback URL**: configure your IdP to redirect back to `https://<ns116-host>/oidc/callback`.
+- **Sessions**: after successful OIDC validation, NS116 creates the normal `ns116_session` cookie (same session management as other login methods).
+- **User provisioning**: if the OIDC user does not exist locally yet, NS116 will **auto-create** the user with the role resolved from `group_mapping` (below). The IdP claim configured as `username_claim` becomes the local `users.username`.
+- **Authorization**: NS116 resolves role from the IdP `groups` claim using `group_mapping`. If the user is not in any mapped group, login is denied.
+
+Example configuration (Pocket ID + Google):
+
+```yaml
+oidc:
+  enabled: true
+  providers:
+    pocketid:
+      label: "Pocket ID"
+      issuer_url: "https://pocket-id.example.com"
+      client_id: "ns116"
+      redirect_url: "https://ns116.example.com/oidc/callback"
+      scopes: ["openid", "profile", "email", "groups"]
+      username_claim: "preferred_username"
+      groups_claim: "groups"
+      group_mapping:
+        admin: ["ns116-admins"]
+        editor: ["ns116-editors"]
+    google:
+      label: "Google"
+      issuer_url: "https://accounts.google.com"
+      client_id: "YOUR_GOOGLE_CLIENT_ID"
+      client_secret: "YOUR_GOOGLE_CLIENT_SECRET"
+      redirect_url: "https://ns116.example.com/oidc/callback"
+      scopes: ["openid", "profile", "email"]
+      username_claim: "email"
+      groups_claim: "groups"
+      group_mapping:
+        editor: ["ns116-editors"]
+      extra_auth_params:
+        access_type: "offline"
+        prompt: "consent"
+```
+
 ## Build
 
 ```bash

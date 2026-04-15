@@ -43,7 +43,7 @@ func (sm *SessionManager) CreateSession(w http.ResponseWriter, username string) 
 		Value:    signed,
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(sessionMaxAge.Seconds()),
 	})
 	return csrfToken

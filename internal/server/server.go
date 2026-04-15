@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"ns116/internal/auth"
+	"ns116/internal/auth/oidc"
 	"ns116/internal/config"
 	"ns116/internal/database"
 	"ns116/internal/handler"
@@ -88,8 +89,25 @@ func Start(cfg *config.Config, version string) error {
 		log.Printf("LDAP groups mapped: %d role(s)", len(cfg.LDAP.GroupMapping))
 	}
 
+	// Initialize OIDC service (nil if disabled)
+	var oidcSvc *oidc.Service
+	var oidcButtons []oidc.ProviderButton
+	if cfg.OIDC.Enabled {
+		secret, err := db.EnsureSessionSecret()
+		if err != nil {
+			return fmt.Errorf("failed to load session secret for OIDC: %w", err)
+		}
+		oidcSvc = oidc.NewService(secret, cfg.OIDC.Providers)
+		oidcButtons = oidcSvc.ProviderButtons()
+		log.Printf("OIDC authentication enabled (%d provider(s))", len(cfg.OIDC.Providers))
+	}
+
 	setupH := handler.NewSetupHandler(db, setupTmpl)
-	authH := handler.NewAuthHandler(db, sessionMgr, ldapClient, loginTmpl)
+	authH := handler.NewAuthHandler(db, sessionMgr, ldapClient, oidcButtons, loginTmpl)
+	var oidcH *handler.OIDCHandler
+	if oidcSvc != nil {
+		oidcH = handler.NewOIDCHandler(db, sessionMgr, oidcSvc)
+	}
 	zoneH := handler.NewZoneHandler(r53, sessionMgr, db, zonesTmpl)
 	recH := handler.NewRecordHandler(r53, sessionMgr, db, recordsTmpl)
 	adminH := handler.NewAdminHandler(db, sessionMgr, adminUsersTmpl)
@@ -108,6 +126,10 @@ func Start(cfg *config.Config, version string) error {
 	appMux.HandleFunc("GET /login", authH.LoginPage)
 	appMux.HandleFunc("POST /login", authH.LoginSubmit)
 	appMux.HandleFunc("POST /logout", authH.Logout)
+	if oidcH != nil {
+		appMux.HandleFunc("GET /login/oidc/{provider}", oidcH.Start)
+		appMux.HandleFunc("GET /oidc/callback", oidcH.Callback)
+	}
 
 	appMux.HandleFunc("GET /zones", sessionMgr.RequireAuth(zoneH.List))
 	appMux.HandleFunc("POST /zones/refresh", sessionMgr.RequireAuth(sessionMgr.ValidateCSRF(zoneH.RefreshZones)))

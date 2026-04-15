@@ -1,3 +1,4 @@
 ns116
 config.yaml
 *.db
+.gomodcache/

@@ -100,3 +100,14 @@ func (db *DB) CreateLDAPUser(username, role string) error {
 	)
 	return err
 }
+
+func (db *DB) CreateOIDCUser(username, role string) error {
+	_, err := db.conn.Exec(
+		`INSERT INTO users (username, pass_hash, role, auth_source, active)
+		 VALUES ($1, '', $2, 'oidc', 1)
+		 ON CONFLICT(username) DO UPDATE SET
+		   role = $2, auth_source = 'oidc', updated_at = NOW()`,
+		username, role,
+	)
+	return err
+}
