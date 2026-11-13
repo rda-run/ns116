@@ -291,7 +291,7 @@
           data-name="${escapeHTML(rec.Name)}" 
           data-type="${escapeHTML(rec.Type)}" 
           data-ttl="${escapeHTML(rec.TTL)}"
-          data-values="${escapeHTML((rec.Values || []).join('||'))}"
+          data-values="${escapeHTML(JSON.stringify(rec.Values || []))}"
           class="text-text-soft hover:text-caution-yellow transition-colors p-1" title="Edit">
           <i data-lucide="edit-3" class="w-4 h-4"></i>
         </button>
@@ -391,7 +391,8 @@
     const name = btn.dataset.name;
     const type = btn.dataset.type;
     const ttl = btn.dataset.ttl;
-    const values = btn.dataset.values ? btn.dataset.values.split('||') : [''];
+    let values = JSON.parse(btn.dataset.values || '[]');
+    if (values.length === 0) values = [''];
 
     document.getElementById('edit-original-name').value = name;
     document.getElementById('edit-original-type').value = type;
