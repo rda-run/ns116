@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -155,7 +156,7 @@ func (h *DuplicateHandler) Ignore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.db.AddDuplicateIgnore(valueHash, valueText, username); err != nil {
-		http.Redirect(w, r, "/admin/duplicates?msg="+fmt.Sprintf("Error: %v", err), http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/duplicates?msg="+url.QueryEscape(fmt.Sprintf("Error: %v", err)), http.StatusSeeOther)
 		return
 	}
 
@@ -166,14 +167,14 @@ func (h *DuplicateHandler) Ignore(w http.ResponseWriter, r *http.Request) {
 		IPAddress: util.GetClientIP(r),
 	})
 
-	http.Redirect(w, r, "/admin/duplicates?msg=Duplicate value ignored successfully", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/duplicates?msg="+url.QueryEscape("Duplicate value ignored successfully"), http.StatusSeeOther)
 }
 
 func (h *DuplicateHandler) Reset(w http.ResponseWriter, r *http.Request) {
 	username, _ := h.sessionMgr.GetUsername(r)
 
 	if err := h.db.ResetIgnoredDuplicates(); err != nil {
-		http.Redirect(w, r, "/admin/duplicates?msg="+fmt.Sprintf("Error: %v", err), http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/duplicates?msg="+url.QueryEscape(fmt.Sprintf("Error: %v", err)), http.StatusSeeOther)
 		return
 	}
 
@@ -184,7 +185,7 @@ func (h *DuplicateHandler) Reset(w http.ResponseWriter, r *http.Request) {
 		IPAddress: util.GetClientIP(r),
 	})
 
-	http.Redirect(w, r, "/admin/duplicates?msg=Ignored duplicates reset successfully", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/duplicates?msg="+url.QueryEscape("Ignored duplicates reset successfully"), http.StatusSeeOther)
 }
 
 func (h *DuplicateHandler) renderError(w http.ResponseWriter, username, csrfToken, role, msg string) {

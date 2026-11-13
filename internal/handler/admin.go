@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"ns116/internal/auth"
@@ -70,7 +71,7 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	http.Redirect(w, r, "/admin/users?msg="+msg, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/users?msg="+url.QueryEscape(msg), http.StatusSeeOther)
 }
 
 func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +96,7 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	http.Redirect(w, r, "/admin/users?msg="+msg, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/users?msg="+url.QueryEscape(msg), http.StatusSeeOther)
 }
 
 func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
