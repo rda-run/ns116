@@ -56,28 +56,29 @@ func (s *DNSService) ListZones(ctx context.Context) ([]model.HostedZone, error) 
 		return zones, nil
 	}
 
-	result, err := s.client.ListHostedZones(ctx, &route53.ListHostedZonesInput{})
-	if err != nil {
-		return nil, err
-	}
-
 	var zones []model.HostedZone
-	for _, z := range result.HostedZones {
-		zoneID := extractZoneID(*z.Id)
-
-		if len(s.allowedZones) > 0 {
-			if _, ok := s.allowedZones[zoneID]; !ok {
-				continue
-			}
+	pages := route53.NewListHostedZonesPaginator(s.client, &route53.ListHostedZonesInput{})
+	for pages.HasMorePages() {
+		result, err := pages.NextPage(ctx)
+		if err != nil {
+			return nil, err
 		}
 
-		zones = append(zones, model.HostedZone{
-			ID:          zoneID,
-			Name:        *z.Name,
-			RecordCount: *z.ResourceRecordSetCount,
-			Comment:     safeComment(z.Config),
-			Label:       s.allowedZones[zoneID],
-		})
+		for _, z := range result.HostedZones {
+			zoneID := extractZoneID(*z.Id)
+
+			if !s.isAllowed(zoneID) {
+				continue
+			}
+
+			zones = append(zones, model.HostedZone{
+				ID:          zoneID,
+				Name:        *z.Name,
+				RecordCount: *z.ResourceRecordSetCount,
+				Comment:     safeComment(z.Config),
+				Label:       s.allowedZones[zoneID],
+			})
+		}
 	}
 
 	if err := s.db.CacheZones(zones); err != nil {
