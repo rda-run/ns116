@@ -168,69 +168,43 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 	}
 	detailStr := strings.Join(diffs, "; ")
 
-	// If Name and Type are unchanged, use UPSERT (atomic update)
-	if originalName == newName && originalType == newType {
-		upsertReq := model.RecordChangeRequest{
-			Action: "UPSERT",
-			Name:   newName,
-			Type:   newType,
-			TTL:    parseTTL(r.FormValue("ttl")),
-			Values: r.Form["value"],
-		}
-
-		msg := "Record updated successfully"
-		if err := h.r53.ChangeRecord(r.Context(), zoneID, upsertReq); err != nil {
-			msg = "Error updating record: " + err.Error()
-		}
-
-		_ = h.db.LogAudit(model.AuditEntry{
-			Username:   username,
-			Action:     "edit_record",
-			ZoneID:     zoneID,
-			RecordName: upsertReq.Name,
-			RecordType: upsertReq.Type,
-			Detail:     detailStr,
-			IPAddress:  util.GetClientIP(r),
-		})
-
-		http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
-		return
-	}
-
-	// If Name or Type changed, we must DELETE old and CREATE new (non-atomic 2-step process)
-	deleteReq := model.RecordChangeRequest{
-		Action: "DELETE",
-		Name:   originalName,
-		Type:   originalType,
-		TTL:    parseTTL(r.FormValue("original_ttl")),
-		Values: r.Form["original_value"],
-	}
-
-	if err := h.r53.ChangeRecord(r.Context(), zoneID, deleteReq); err != nil {
-		msg := "Error deleting old record: " + err.Error()
-		http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
-		return
-	}
-
-	createReq := model.RecordChangeRequest{
-		Action: "CREATE",
+	newReq := model.RecordChangeRequest{
+		Action: "UPSERT",
 		Name:   newName,
 		Type:   newType,
 		TTL:    parseTTL(r.FormValue("ttl")),
 		Values: r.Form["value"],
 	}
+	changes := []model.RecordChangeRequest{newReq}
+
+	// A record set is identified by name and type. Changing either means
+	// deleting the old set and creating the new one, sent as a single change
+	// batch so Route53 applies both or neither.
+	if originalName != newName || originalType != newType {
+		newReq.Action = "CREATE"
+		changes = []model.RecordChangeRequest{
+			{
+				Action: "DELETE",
+				Name:   originalName,
+				Type:   originalType,
+				TTL:    parseTTL(r.FormValue("original_ttl")),
+				Values: r.Form["original_value"],
+			},
+			newReq,
+		}
+	}
 
 	msg := "Record updated successfully"
-	if err := h.r53.ChangeRecord(r.Context(), zoneID, createReq); err != nil {
-		msg = "Error creating new record: " + err.Error()
+	if err := h.r53.ChangeRecord(r.Context(), zoneID, changes...); err != nil {
+		msg = "Error updating record: " + err.Error()
 	}
 
 	_ = h.db.LogAudit(model.AuditEntry{
 		Username:   username,
 		Action:     "edit_record",
 		ZoneID:     zoneID,
-		RecordName: createReq.Name,
-		RecordType: createReq.Type,
+		RecordName: newReq.Name,
+		RecordType: newReq.Type,
 		Detail:     detailStr,
 		IPAddress:  util.GetClientIP(r),
 	})

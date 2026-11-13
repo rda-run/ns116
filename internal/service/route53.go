@@ -170,27 +170,41 @@ func (s *DNSService) ListRecords(ctx context.Context, zoneID string) ([]model.DN
 	return records, nil
 }
 
-func (s *DNSService) ChangeRecord(ctx context.Context, zoneID string, req model.RecordChangeRequest) error {
+// ChangeRecord applies the given changes as one atomic Route53 change batch.
+func (s *DNSService) ChangeRecord(ctx context.Context, zoneID string, reqs ...model.RecordChangeRequest) error {
 	if !s.isAllowed(zoneID) {
 		return fmt.Errorf("zone %s is not in the allowed list", zoneID)
 	}
 
-	var action types.ChangeAction
-	switch req.Action {
-	case "CREATE":
-		action = types.ChangeActionCreate
-	case "UPSERT":
-		action = types.ChangeActionUpsert
-	case "DELETE":
-		action = types.ChangeActionDelete
-	default:
-		return fmt.Errorf("invalid action: %s", req.Action)
-	}
+	var changes []types.Change
+	for _, req := range reqs {
+		var action types.ChangeAction
+		switch req.Action {
+		case "CREATE":
+			action = types.ChangeActionCreate
+		case "UPSERT":
+			action = types.ChangeActionUpsert
+		case "DELETE":
+			action = types.ChangeActionDelete
+		default:
+			return fmt.Errorf("invalid action: %s", req.Action)
+		}
 
-	var resourceRecords []types.ResourceRecord
-	for _, v := range req.Values {
-		resourceRecords = append(resourceRecords, types.ResourceRecord{
-			Value: aws.String(v),
+		var resourceRecords []types.ResourceRecord
+		for _, v := range req.Values {
+			resourceRecords = append(resourceRecords, types.ResourceRecord{
+				Value: aws.String(v),
+			})
+		}
+
+		changes = append(changes, types.Change{
+			Action: action,
+			ResourceRecordSet: &types.ResourceRecordSet{
+				Name:            aws.String(req.Name),
+				Type:            types.RRType(req.Type),
+				TTL:             aws.Int64(req.TTL),
+				ResourceRecords: resourceRecords,
+			},
 		})
 	}
 
@@ -198,17 +212,7 @@ func (s *DNSService) ChangeRecord(ctx context.Context, zoneID string, req model.
 		HostedZoneId: aws.String(zoneID),
 		ChangeBatch: &types.ChangeBatch{
 			Comment: aws.String("Changed via NS116"),
-			Changes: []types.Change{
-				{
-					Action: action,
-					ResourceRecordSet: &types.ResourceRecordSet{
-						Name:            aws.String(req.Name),
-						Type:            types.RRType(req.Type),
-						TTL:             aws.Int64(req.TTL),
-						ResourceRecords: resourceRecords,
-					},
-				},
-			},
+			Changes: changes,
 		},
 	})
 
