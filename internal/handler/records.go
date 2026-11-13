@@ -4,10 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"math"
 	"net/http"
+	"net/netip"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 
 	"ns116/internal/auth"
 	"ns116/internal/database"
@@ -90,10 +95,70 @@ func qualifyName(name, zoneDomain string) string {
 	if strings.HasSuffix(name, ".") {
 		return name
 	}
-	if strings.HasSuffix(name, strings.TrimSuffix(zoneDomain, ".")) {
+	if inZone(name+".", zoneDomain) {
 		return name + "."
 	}
 	return name + "." + zoneDomain
+}
+
+// inZone reports whether the FQDN is the zone apex or a name below it.
+func inZone(fqdn, zoneDomain string) bool {
+	fqdn, zoneDomain = strings.ToLower(fqdn), strings.ToLower(zoneDomain)
+	return fqdn == zoneDomain || strings.HasSuffix(fqdn, "."+zoneDomain)
+}
+
+// manageableType accepts every record type Route53 knows except SOA, which
+// Route53 manages itself. Types missing from the form (DS, HTTPS, SPF...) stay
+// allowed so that existing records of those types can still be deleted.
+func manageableType(t string) bool {
+	return t != "SOA" && slices.Contains(types.RRType("").Values(), types.RRType(t))
+}
+
+// validateChange is the server-side counterpart of what the UI already hides:
+// no SOA, no apex NS, nothing outside the zone, and no malformed input.
+// Route53 still has the final word on the value syntax of each type.
+func validateChange(req model.RecordChangeRequest, zoneDomain string) error {
+	if !manageableType(req.Type) {
+		return fmt.Errorf("record type %q cannot be managed here", req.Type)
+	}
+	if !inZone(req.Name, zoneDomain) {
+		return fmt.Errorf("record name %q is outside zone %s", req.Name, zoneDomain)
+	}
+	if req.Type == "NS" && strings.EqualFold(req.Name, zoneDomain) {
+		return fmt.Errorf("the NS record of the zone apex cannot be changed")
+	}
+	if req.TTL < 0 || req.TTL > math.MaxInt32 {
+		return fmt.Errorf("TTL %d is out of range", req.TTL)
+	}
+	if len(req.Values) == 0 {
+		return fmt.Errorf("at least one value is required")
+	}
+	for _, v := range req.Values {
+		if strings.TrimSpace(v) == "" {
+			return fmt.Errorf("values cannot be empty")
+		}
+		if req.Type != "A" && req.Type != "AAAA" {
+			continue
+		}
+		addr, err := netip.ParseAddr(v)
+		if err != nil || addr.Is4() != (req.Type == "A") {
+			return fmt.Errorf("%q is not a valid address for a %s record", v, req.Type)
+		}
+	}
+	return nil
+}
+
+// zoneDomain returns the zone's domain name, or redirects back to the records
+// page with the error. Changes are refused when the zone cannot be resolved,
+// because they cannot be validated against it.
+func (h *RecordHandler) zoneDomain(w http.ResponseWriter, r *http.Request, zoneID string) (string, bool) {
+	zone, err := h.r53.GetZone(r.Context(), zoneID)
+	if err != nil {
+		msg := "Error: failed to load zone: " + err.Error()
+		http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
+		return "", false
+	}
+	return zone.Name, true
 }
 
 func (h *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -101,10 +166,9 @@ func (h *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
 	username, _ := h.sessionMgr.GetUsername(r)
 	_ = r.ParseForm()
 
-	zone, err := h.r53.GetZone(r.Context(), zoneID)
-	zoneDomain := ""
-	if err == nil {
-		zoneDomain = zone.Name
+	zoneDomain, ok := h.zoneDomain(w, r, zoneID)
+	if !ok {
+		return
 	}
 
 	req := model.RecordChangeRequest{
@@ -116,7 +180,10 @@ func (h *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := "Record created successfully"
-	err = h.r53.ChangeRecord(r.Context(), zoneID, req)
+	err := validateChange(req, zoneDomain)
+	if err == nil {
+		err = h.r53.ChangeRecord(r.Context(), zoneID, req)
+	}
 	if err != nil {
 		msg = "Error: " + err.Error()
 	}
@@ -139,10 +206,9 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 	username, _ := h.sessionMgr.GetUsername(r)
 	_ = r.ParseForm()
 
-	zone, err := h.r53.GetZone(r.Context(), zoneID)
-	zoneDomain := ""
-	if err == nil {
-		zoneDomain = zone.Name
+	zoneDomain, ok := h.zoneDomain(w, r, zoneID)
+	if !ok {
+		return
 	}
 
 	originalName := r.FormValue("original_name")
@@ -196,7 +262,15 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := "Record updated successfully"
-	err = h.r53.ChangeRecord(r.Context(), zoneID, changes...)
+	var err error
+	for _, c := range changes {
+		if err = validateChange(c, zoneDomain); err != nil {
+			break
+		}
+	}
+	if err == nil {
+		err = h.r53.ChangeRecord(r.Context(), zoneID, changes...)
+	}
 	if err != nil {
 		msg = "Error updating record: " + err.Error()
 	}
@@ -219,6 +293,11 @@ func (h *RecordHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	username, _ := h.sessionMgr.GetUsername(r)
 	_ = r.ParseForm()
 
+	zoneDomain, ok := h.zoneDomain(w, r, zoneID)
+	if !ok {
+		return
+	}
+
 	req := model.RecordChangeRequest{
 		Action: "DELETE",
 		Name:   r.FormValue("name"),
@@ -228,7 +307,10 @@ func (h *RecordHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := "Record deleted successfully"
-	err := h.r53.ChangeRecord(r.Context(), zoneID, req)
+	err := validateChange(req, zoneDomain)
+	if err == nil {
+		err = h.r53.ChangeRecord(r.Context(), zoneID, req)
+	}
 	if err != nil {
 		msg = "Error: " + err.Error()
 	}
