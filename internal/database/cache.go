@@ -2,6 +2,8 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"time"
 
 	"ns116/internal/model"
@@ -14,15 +16,19 @@ func (db *DB) CacheZones(zones []model.HostedZone) error {
 	if err != nil {
 		return err
 	}
-	_, _ = tx.Exec("DELETE FROM zones_cache")
+	defer tx.Rollback() // no-op after Commit
+	if _, err := tx.Exec("DELETE FROM zones_cache"); err != nil {
+		return err
+	}
 	stmt, err := tx.Prepare(`INSERT INTO zones_cache (zone_id, name, record_count, comment, label) VALUES ($1, $2, $3, $4, $5)`)
 	if err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 	for _, z := range zones {
-		_, _ = stmt.Exec(z.ID, z.Name, z.RecordCount, z.Comment, z.Label)
+		if _, err := stmt.Exec(z.ID, z.Name, z.RecordCount, z.Comment, z.Label); err != nil {
+			return fmt.Errorf("zone %s: %w", z.ID, err)
+		}
 	}
 	return tx.Commit()
 }
@@ -60,24 +66,30 @@ func (db *DB) CacheRecords(zoneID string, records []model.DNSRecord) error {
 	if err != nil {
 		return err
 	}
-	// Use $1 for parameter
-	_, _ = tx.Exec("DELETE FROM dns_cache WHERE zone_id = $1", zoneID)
+	defer tx.Rollback() // no-op after Commit
+	if _, err := tx.Exec("DELETE FROM dns_cache WHERE zone_id = $1", zoneID); err != nil {
+		return err
+	}
 
 	stmt, err := tx.Prepare(`INSERT INTO dns_cache
 		(zone_id, record_name, record_type, ttl, values_json, is_alias, alias_target, alias_zone_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`)
 	if err != nil {
-		_ = tx.Rollback()
 		return err
 	}
 	defer stmt.Close()
 	for _, r := range records {
-		vJSON, _ := json.Marshal(r.Values)
+		vJSON, err := json.Marshal(r.Values)
+		if err != nil {
+			return err
+		}
 		isAlias := 0
 		if r.IsAlias {
 			isAlias = 1
 		}
-		_, _ = stmt.Exec(zoneID, r.Name, r.Type, r.TTL, string(vJSON), isAlias, r.AliasTarget, r.AliasZoneID)
+		if _, err := stmt.Exec(zoneID, r.Name, r.Type, r.TTL, string(vJSON), isAlias, r.AliasTarget, r.AliasZoneID); err != nil {
+			return fmt.Errorf("record %s %s: %w", r.Name, r.Type, err)
+		}
 	}
 	return tx.Commit()
 }
@@ -117,10 +129,15 @@ func (db *DB) GetCachedRecords(zoneID string) ([]model.DNSRecord, bool) {
 }
 
 func (db *DB) InvalidateRecordCache(zoneID string) {
-	_, _ = db.conn.Exec("DELETE FROM dns_cache WHERE zone_id = $1", zoneID)
+	if _, err := db.conn.Exec("DELETE FROM dns_cache WHERE zone_id = $1", zoneID); err != nil {
+		log.Printf("cache: failed to invalidate records of zone %s: %v", zoneID, err)
+	}
 }
 
 func (db *DB) InvalidateAllCache() {
-	_, _ = db.conn.Exec("DELETE FROM dns_cache")
-	_, _ = db.conn.Exec("DELETE FROM zones_cache")
+	for _, table := range []string{"dns_cache", "zones_cache"} {
+		if _, err := db.conn.Exec("DELETE FROM " + table); err != nil {
+			log.Printf("cache: failed to clear %s: %v", table, err)
+		}
+	}
 }

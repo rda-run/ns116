@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -79,7 +80,9 @@ func (s *DNSService) ListZones(ctx context.Context) ([]model.HostedZone, error) 
 		})
 	}
 
-	_ = s.db.CacheZones(zones)
+	if err := s.db.CacheZones(zones); err != nil {
+		log.Printf("cache: failed to store zones: %v", err)
+	}
 	return zones, nil
 }
 
@@ -160,7 +163,9 @@ func (s *DNSService) ListRecords(ctx context.Context, zoneID string) ([]model.DN
 		nextType = result.NextRecordType
 	}
 
-	_ = s.db.CacheRecords(zoneID, records)
+	if err := s.db.CacheRecords(zoneID, records); err != nil {
+		log.Printf("cache: failed to store records of zone %s: %v", zoneID, err)
+	}
 	return records, nil
 }
 
