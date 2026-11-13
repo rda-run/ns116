@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -82,7 +83,11 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.sessionMgr.CreateSession(w, r, user.Username)
+	if err := h.sessionMgr.CreateSession(w, r, user.Username); err != nil {
+		log.Printf("oidc login: %v", err)
+		oidc.RedirectToLoginWithError(w, r, "Login error")
+		return
+	}
 
 	_ = h.db.LogAudit(model.AuditEntry{
 		Username:  user.Username,

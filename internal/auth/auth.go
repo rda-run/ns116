@@ -31,7 +31,7 @@ func NewSessionManager(db *database.DB) (*SessionManager, error) {
 	return &SessionManager{secret: secret, db: db}, nil
 }
 
-func (sm *SessionManager) CreateSession(w http.ResponseWriter, r *http.Request, username string) string {
+func (sm *SessionManager) CreateSession(w http.ResponseWriter, r *http.Request, username string) error {
 	token := generateToken()
 	csrfToken := generateToken()
 	expiresAt := time.Now().Add(sessionMaxAge)
@@ -39,7 +39,9 @@ func (sm *SessionManager) CreateSession(w http.ResponseWriter, r *http.Request, 
 	// The cookie carries the raw token; the database only stores its HMAC.
 	// A cookie is valid only if it signs to a stored session, and a leaked
 	// sessions table cannot be replayed as cookies.
-	_ = sm.db.CreateSession(sm.sign(token), csrfToken, username, expiresAt)
+	if err := sm.db.CreateSession(sm.sign(token), csrfToken, username, expiresAt); err != nil {
+		return fmt.Errorf("failed to store session: %w", err)
+	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
@@ -50,7 +52,7 @@ func (sm *SessionManager) CreateSession(w http.ResponseWriter, r *http.Request, 
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(sessionMaxAge.Seconds()),
 	})
-	return csrfToken
+	return nil
 }
 
 func (sm *SessionManager) DestroySession(w http.ResponseWriter, r *http.Request) {

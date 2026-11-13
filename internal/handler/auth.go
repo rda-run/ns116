@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 
 	"ns116/internal/auth"
@@ -93,7 +94,15 @@ func (h *AuthHandler) LoginSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.sessionMgr.CreateSession(w, r, user.Username)
+	if err := h.sessionMgr.CreateSession(w, r, user.Username); err != nil {
+		log.Printf("login: %v", err)
+		h.tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+			"Error":       "Login error, please try again",
+			"LDAPEnabled": h.ldap != nil,
+			"OIDCButtons": h.oidcButtons,
+		})
+		return
+	}
 
 	_ = h.db.LogAudit(model.AuditEntry{
 		Username:  user.Username,
