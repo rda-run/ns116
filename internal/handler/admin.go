@@ -10,6 +10,7 @@ import (
 	"ns116/internal/auth"
 	"ns116/internal/database"
 	"ns116/internal/model"
+	"ns116/internal/util"
 )
 
 type AdminHandler struct {
@@ -67,7 +68,7 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			Username:  username,
 			Action:    "create_user",
 			Detail:    fmt.Sprintf("created user=%s role=%s", newUsername, role),
-			IPAddress: r.RemoteAddr,
+			IPAddress: util.GetClientIP(r),
 		})
 	}
 
@@ -92,7 +93,7 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 			Username:  username,
 			Action:    "delete_user",
 			Detail:    fmt.Sprintf("deleted user=%s", targetUser),
-			IPAddress: r.RemoteAddr,
+			IPAddress: util.GetClientIP(r),
 		})
 	}
 
