@@ -33,6 +33,13 @@
       document.documentElement.dataset.themeMode = mode;
     })();
   </script>
+  <script>
+    // Escapes untrusted text (DNS names and values) before it goes into innerHTML.
+    function escapeHTML(value) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(value ?? '').replace(/[&<>"']/g, (c) => map[c]);
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

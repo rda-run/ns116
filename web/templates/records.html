@@ -282,26 +282,26 @@
   function renderRow(rec) {
     const isSpecial = rec.Type === 'SOA' || rec.Type === 'NS';
     const valuesContent = rec.IsAlias 
-      ? `<div class="flex items-center gap-2"><span class="text-[10px] uppercase bg-asphalt-dark text-white px-1.5 py-0.5 rounded">ALIAS</span><span class="text-connection-blue underline decoration-dotted underline-offset-2 break-all">${rec.AliasTarget}</span></div>`
-      : rec.Values.map(v => `<div class="break-all">${v}</div>`).join('');
+      ? `<div class="flex items-center gap-2"><span class="text-[10px] uppercase bg-asphalt-dark text-white px-1.5 py-0.5 rounded">ALIAS</span><span class="text-connection-blue underline decoration-dotted underline-offset-2 break-all">${escapeHTML(rec.AliasTarget)}</span></div>`
+      : (rec.Values || []).map(v => `<div class="break-all">${escapeHTML(v)}</div>`).join('');
 
     const actionButtons = isSpecial ? '' : `
       <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onclick="showEditForm(this)" 
-          data-name="${rec.Name}" 
-          data-type="${rec.Type}" 
-          data-ttl="${rec.TTL}"
-          data-values="${rec.Values ? rec.Values.join('||') : ''}"
+          data-name="${escapeHTML(rec.Name)}" 
+          data-type="${escapeHTML(rec.Type)}" 
+          data-ttl="${escapeHTML(rec.TTL)}"
+          data-values="${escapeHTML((rec.Values || []).join('||'))}"
           class="text-text-soft hover:text-caution-yellow transition-colors p-1" title="Edit">
           <i data-lucide="edit-3" class="w-4 h-4"></i>
         </button>
 
         <form method="POST" action="/zones/${zoneID}/records/delete" class="inline" onsubmit="return confirm('Delete this record?')">
           <input type="hidden" name="csrf_token" value="${csrfToken}">
-          <input type="hidden" name="name" value="${rec.Name}">
-          <input type="hidden" name="type" value="${rec.Type}">
-          <input type="hidden" name="ttl" value="${rec.TTL}">
-          ${(rec.Values || []).map(v => `<input type="hidden" name="value" value="${v}">`).join('')}
+          <input type="hidden" name="name" value="${escapeHTML(rec.Name)}">
+          <input type="hidden" name="type" value="${escapeHTML(rec.Type)}">
+          <input type="hidden" name="ttl" value="${escapeHTML(rec.TTL)}">
+          ${(rec.Values || []).map(v => `<input type="hidden" name="value" value="${escapeHTML(v)}">`).join('')}
           <button type="submit" onclick="this.innerHTML='<i data-lucide=\\'loader-2\\' class=\\'w-4 h-4 animate-spin\\'></i>'; lucide.createIcons()" class="text-text-soft hover:text-red-500 transition-colors p-1" title="Delete">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
@@ -312,20 +312,20 @@
     const searchStr = `${rec.Name} ${(rec.Values || []).join(' ')} ${rec.AliasTarget || ''}`.toLowerCase();
 
     return `
-      <tr class="record-card hover:bg-blue-50/50 transition-colors group" data-search="${searchStr}">
+      <tr class="record-card hover:bg-blue-50/50 transition-colors group" data-search="${escapeHTML(searchStr)}">
         <td class="p-4 align-top">
           <span class="inline-block text-xs font-bold px-2 py-0.5 rounded shadow-sm text-white text-center min-w-[3.5rem] ${getTypeBadgeClass(rec.Type)}">
-            ${rec.Type}
+            ${escapeHTML(rec.Type)}
           </span>
         </td>
         <td class="p-4 align-top">
-          <span class="font-mono font-medium text-text-base text-sm break-all" title="${rec.Name}">${stripDomain(rec.Name)}</span>
+          <span class="font-mono font-medium text-text-base text-sm break-all" title="${escapeHTML(rec.Name)}">${escapeHTML(stripDomain(rec.Name))}</span>
         </td>
         <td class="p-4 align-top">
           <div class="font-mono text-sm text-text-muted space-y-1">${valuesContent}</div>
         </td>
         <td class="p-4 align-top">
-          ${!rec.IsAlias ? `<span class="font-mono text-xs text-text-muted">${rec.TTL}</span>` : '<span class="text-text-soft">-</span>'}
+          ${!rec.IsAlias ? `<span class="font-mono text-xs text-text-muted">${escapeHTML(rec.TTL)}</span>` : '<span class="text-text-soft">-</span>'}
         </td>
         <td class="p-4 align-top text-right">${actionButtons}</td>
       </tr>
@@ -428,10 +428,8 @@
     const container = document.getElementById('edit-values-container');
     const div = document.createElement('div');
     div.className = 'flex gap-2 mb-2';
-    // Use innerText to avoid script injection if val comes from untrusted source, 
-    // though here it's from the dataset.
     div.innerHTML = `
-    <input type="text" name="value" value="${val.replace(/"/g, '&quot;')}" required
+    <input type="text" name="value" value="${escapeHTML(val)}" required
       class="flex-1 border border-border-subtle rounded-lg p-3 font-mono text-sm bg-surface-subtle focus:bg-surface focus:outline-none focus:ring-2 focus:ring-connection-blue/50 focus:border-connection-blue">
     <button type="button" onclick="this.parentElement.remove()"
       class="border border-red-200 bg-red-50 text-red-500 px-3 hover:bg-red-100 rounded-lg transition-colors">

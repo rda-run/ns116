@@ -123,14 +123,14 @@
       <div class="flex items-center justify-between gap-4 p-2 rounded-lg hover:bg-surface-subtle transition-colors">
         <div class="flex items-center gap-3 min-w-0">
           <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded shadow-sm text-white text-center min-w-[3rem] ${getTypeBadgeClass(rec.Type)}">
-            ${rec.Type}
+            ${escapeHTML(rec.Type)}
           </span>
           <div class="flex flex-col min-w-0">
-            <span class="font-mono text-sm font-medium text-text-base truncate" title="${rec.Name}">${rec.Name}</span>
-            <span class="text-[10px] text-text-muted uppercase tracking-tight">${rec.ZoneLabel}</span>
+            <span class="font-mono text-sm font-medium text-text-base truncate" title="${escapeHTML(rec.Name)}">${escapeHTML(rec.Name)}</span>
+            <span class="text-[10px] text-text-muted uppercase tracking-tight">${escapeHTML(rec.ZoneLabel)}</span>
           </div>
         </div>
-        <a href="/zones/${rec.ZoneID}/records" class="text-text-soft hover:text-connection-blue transition-colors">
+        <a href="/zones/${encodeURIComponent(rec.ZoneID)}/records" class="text-text-soft hover:text-connection-blue transition-colors">
           <i data-lucide="external-link" class="w-4 h-4"></i>
         </a>
       </div>
@@ -140,7 +140,7 @@
 
     return `
       <div class="duplicate-card bg-surface rounded-xl border border-border-subtle shadow-sm overflow-hidden hover:border-connection-blue/30 transition-all group"
-        data-search="${searchStr}">
+        data-search="${escapeHTML(searchStr)}">
         <div class="bg-surface-subtle border-b border-border-subtle p-4 flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="bg-caution-yellow/10 p-2 rounded-lg">
@@ -148,13 +148,13 @@
             </div>
             <div>
               <span class="text-xs font-bold text-text-soft uppercase tracking-widest">Duplicate Value</span>
-              <div class="font-mono text-sm font-bold text-text-base break-all">${group.Value}</div>
+              <div class="font-mono text-sm font-bold text-text-base break-all">${escapeHTML(group.Value)}</div>
             </div>
           </div>
           <form method="POST" action="/admin/duplicates/ignore" class="opacity-0 group-hover:opacity-100 transition-opacity">
             <input type="hidden" name="csrf_token" value="${csrfToken}">
-            <input type="hidden" name="value_hash" value="${group.ValueHash}">
-            <input type="hidden" name="value_text" value="${group.Value}">
+            <input type="hidden" name="value_hash" value="${escapeHTML(group.ValueHash)}">
+            <input type="hidden" name="value_text" value="${escapeHTML(group.Value)}">
             <button type="submit" onclick="return confirm('Ignore this duplicate group?')"
               class="text-xs font-bold px-3 py-1.5 rounded-lg bg-surface border border-border-subtle text-text-muted hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center gap-2">
               <i data-lucide="eye-off" class="w-3.5 h-3.5"></i> Ignore
