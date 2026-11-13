@@ -3,6 +3,7 @@ package handler
 import (
 	"html/template"
 	"net/http"
+	"strings"
 
 	"ns116/internal/auth"
 	"ns116/internal/database"
@@ -44,6 +45,18 @@ func (h *ZoneHandler) List(w http.ResponseWriter, r *http.Request) {
 		"Role":      roleOf(user),
 		"Zones":     zones,
 	})
+}
+
+// flash splits the ?msg= of a redirect into the success and error banners of
+// the layout. Handlers mark failures by starting the message with "Error".
+// ponytail: prefix convention; switch to a separate ?err= parameter if a
+// success message ever needs to start with "Error".
+func flash(r *http.Request) (success, failure string) {
+	msg := r.URL.Query().Get("msg")
+	if !strings.HasPrefix(msg, "Error") {
+		return msg, ""
+	}
+	return "", strings.TrimPrefix(msg, "Error: ")
 }
 
 func roleOf(u *model.User) string {

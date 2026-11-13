@@ -39,13 +39,15 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	success, failure := flash(r)
 	h.tmpl.ExecuteTemplate(w, "layout", map[string]interface{}{
 		"Title":     "Users",
 		"Username":  username,
 		"CSRFToken": csrfToken,
 		"Role":      roleOf(user),
 		"Users":     users,
-		"Flash":     r.URL.Query().Get("msg"),
+		"Flash":     success,
+		"Error":     failure,
 	})
 }
 
@@ -81,7 +83,7 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	targetUser := r.FormValue("username")
 
 	if targetUser == username {
-		http.Redirect(w, r, "/admin/users?msg=Cannot+delete+yourself", http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/users?msg="+url.QueryEscape("Error: you cannot delete yourself"), http.StatusSeeOther)
 		return
 	}
 

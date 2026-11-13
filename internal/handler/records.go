@@ -56,6 +56,7 @@ func (h *RecordHandler) List(w http.ResponseWriter, r *http.Request) {
 		zoneName = zone.Label
 	}
 
+	success, failure := flash(r)
 	h.tmpl.ExecuteTemplate(w, "layout", map[string]interface{}{
 		"Title":      zoneName,
 		"Username":   username,
@@ -64,7 +65,8 @@ func (h *RecordHandler) List(w http.ResponseWriter, r *http.Request) {
 		"ZoneID":     zoneID,
 		"ZoneName":   zoneName,
 		"ZoneDomain": zone.Name,
-		"Flash":      r.URL.Query().Get("msg"),
+		"Flash":      success,
+		"Error":      failure,
 	})
 }
 

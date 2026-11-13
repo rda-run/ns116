@@ -32,12 +32,14 @@ func (h *DuplicateHandler) List(w http.ResponseWriter, r *http.Request) {
 	username, csrfToken, _ := h.sessionMgr.GetSessionInfo(r)
 	user, _ := h.db.GetUserByUsername(username)
 
+	success, failure := flash(r)
 	h.tmpl.ExecuteTemplate(w, "layout", map[string]interface{}{
 		"Title":     "Duplicate Records",
 		"Username":  username,
 		"CSRFToken": csrfToken,
 		"Role":      roleOf(user),
-		"Flash":     r.URL.Query().Get("msg"),
+		"Flash":     success,
+		"Error":     failure,
 	})
 }
 

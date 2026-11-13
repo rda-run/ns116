@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"ns116/internal/model"
@@ -56,6 +58,20 @@ func TestQualifyName(t *testing.T) {
 	} {
 		if got := qualifyName(in, zone); got != want {
 			t.Errorf("qualifyName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestFlash(t *testing.T) {
+	for msg, want := range map[string][2]string{
+		"":                               {"", ""},
+		"Record created successfully":    {"Record created successfully", ""},
+		"Error: zone not found":          {"", "zone not found"},
+		"Error updating record: refused": {"", "Error updating record: refused"},
+	} {
+		r := httptest.NewRequest("GET", "/?msg="+url.QueryEscape(msg), nil)
+		if s, f := flash(r); s != want[0] || f != want[1] {
+			t.Errorf("flash(%q) = (%q, %q), want %q", msg, s, f, want)
 		}
 	}
 }
