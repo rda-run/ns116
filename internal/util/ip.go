@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+// IsHTTPS reports whether the client reached us over TLS, either directly
+// or through a reverse proxy that sets X-Forwarded-Proto.
+func IsHTTPS(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
 // GetClientIP extracts the true client IP address from a request,
 // considering X-Forwarded-For headers if present (e.g. from Ingress/Nginx).
 func GetClientIP(r *http.Request) string {

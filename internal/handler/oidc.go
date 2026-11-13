@@ -82,7 +82,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.sessionMgr.CreateSession(w, user.Username)
+	h.sessionMgr.CreateSession(w, r, user.Username)
 
 	_ = h.db.LogAudit(model.AuditEntry{
 		Username:  user.Username,

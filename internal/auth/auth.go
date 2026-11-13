@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"ns116/internal/database"
+	"ns116/internal/util"
 )
 
 const (
@@ -30,7 +31,7 @@ func NewSessionManager(db *database.DB) (*SessionManager, error) {
 	return &SessionManager{secret: secret, db: db}, nil
 }
 
-func (sm *SessionManager) CreateSession(w http.ResponseWriter, username string) string {
+func (sm *SessionManager) CreateSession(w http.ResponseWriter, r *http.Request, username string) string {
 	token := generateToken()
 	csrfToken := generateToken()
 	expiresAt := time.Now().Add(sessionMaxAge)
@@ -45,6 +46,7 @@ func (sm *SessionManager) CreateSession(w http.ResponseWriter, username string) 
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   util.IsHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(sessionMaxAge.Seconds()),
 	})

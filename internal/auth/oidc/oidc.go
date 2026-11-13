@@ -19,6 +19,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"ns116/internal/config"
+	"ns116/internal/util"
 )
 
 const (
@@ -120,7 +121,7 @@ func (s *Service) StartAuth(w http.ResponseWriter, r *http.Request, providerName
 		PKCEVerifier: verifier,
 		CreatedAtUTC: time.Now().UTC().Unix(),
 	}
-	if err := s.setRequestCookie(w, &ar); err != nil {
+	if err := s.setRequestCookie(w, r, &ar); err != nil {
 		return "", err
 	}
 
@@ -217,7 +218,7 @@ func (s *Service) ClearRequestCookie(w http.ResponseWriter) {
 	})
 }
 
-func (s *Service) setRequestCookie(w http.ResponseWriter, ar *authRequest) error {
+func (s *Service) setRequestCookie(w http.ResponseWriter, r *http.Request, ar *authRequest) error {
 	b, err := json.Marshal(ar)
 	if err != nil {
 		return err
@@ -231,6 +232,7 @@ func (s *Service) setRequestCookie(w http.ResponseWriter, ar *authRequest) error
 		Value:    val,
 		Path:     "/oidc/callback",
 		HttpOnly: true,
+		Secure:   util.IsHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(requestMaxAge.Seconds()),
 	})
