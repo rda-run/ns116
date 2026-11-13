@@ -116,7 +116,8 @@ func (h *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := "Record created successfully"
-	if err := h.r53.ChangeRecord(r.Context(), zoneID, req); err != nil {
+	err = h.r53.ChangeRecord(r.Context(), zoneID, req)
+	if err != nil {
 		msg = "Error: " + err.Error()
 	}
 
@@ -126,7 +127,7 @@ func (h *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ZoneID:     zoneID,
 		RecordName: req.Name,
 		RecordType: req.Type,
-		Detail:     fmt.Sprintf("values=[%s] ttl=%d", strings.Join(req.Values, ", "), req.TTL),
+		Detail:     auditDetail(fmt.Sprintf("values=[%s] ttl=%d", strings.Join(req.Values, ", "), req.TTL), err),
 		IPAddress:  util.GetClientIP(r),
 	})
 
@@ -195,7 +196,8 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := "Record updated successfully"
-	if err := h.r53.ChangeRecord(r.Context(), zoneID, changes...); err != nil {
+	err = h.r53.ChangeRecord(r.Context(), zoneID, changes...)
+	if err != nil {
 		msg = "Error updating record: " + err.Error()
 	}
 
@@ -205,7 +207,7 @@ func (h *RecordHandler) Edit(w http.ResponseWriter, r *http.Request) {
 		ZoneID:     zoneID,
 		RecordName: newReq.Name,
 		RecordType: newReq.Type,
-		Detail:     detailStr,
+		Detail:     auditDetail(detailStr, err),
 		IPAddress:  util.GetClientIP(r),
 	})
 
@@ -226,7 +228,8 @@ func (h *RecordHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := "Record deleted successfully"
-	if err := h.r53.ChangeRecord(r.Context(), zoneID, req); err != nil {
+	err := h.r53.ChangeRecord(r.Context(), zoneID, req)
+	if err != nil {
 		msg = "Error: " + err.Error()
 	}
 
@@ -236,11 +239,20 @@ func (h *RecordHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		ZoneID:     zoneID,
 		RecordName: req.Name,
 		RecordType: req.Type,
-		Detail:     fmt.Sprintf("ttl=%d values=[%s]", req.TTL, strings.Join(req.Values, ", ")),
+		Detail:     auditDetail(fmt.Sprintf("ttl=%d values=[%s]", req.TTL, strings.Join(req.Values, ", ")), err),
 		IPAddress:  util.GetClientIP(r),
 	})
 
 	http.Redirect(w, r, fmt.Sprintf("/zones/%s/records?msg=%s", zoneID, url.QueryEscape(msg)), http.StatusSeeOther)
+}
+
+// auditDetail marks the entry as failed when the change was rejected, so the
+// audit log does not read as if a refused change had been applied.
+func auditDetail(detail string, err error) string {
+	if err == nil {
+		return detail
+	}
+	return strings.TrimPrefix(detail+"; FAILED: "+err.Error(), "; ")
 }
 
 func parseTTL(s string) int64 {
